@@ -1,0 +1,802 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="HRA_description">
+  <link
+    name="base_link">
+    <!-- 删除：原 base_link 惯性 -->
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- 新增：虚拟子链接 dummy_link 承载原 base_link 惯性 -->
+  <link name="dummy_link">
+    <inertial>
+      <origin
+        xyz="0.001036 -0.001377 -0.012817"
+        rpy="0 0 0" />
+      <mass
+        value="3.4296" />
+      <inertia
+        ixx="0.0081806"
+        ixy="2.5668E-07"
+        ixz="3.2733E-06"
+        iyy="0.010474"
+        iyz="1.5189E-06"
+        izz="0.011973" />
+    </inertial>
+  </link>
+
+  <!-- 新增：固定关节，把 dummy_link 刚性挂载到 base_link -->
+  <joint name="base_to_dummy" type="fixed">
+    <parent link="base_link"/>
+    <child  link="dummy_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  
+  <link
+    name="LX+_Link">
+    <inertial>
+      <origin
+        xyz="-1.8519E-10 -2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="-1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LX+_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LX+_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LX+_joint"
+    type="continuous">
+    <origin
+      xyz="0.122 0.071 0.071"
+      rpy="1.5708 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="LX+_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="LX-_Link">
+    <inertial>
+      <origin
+        xyz="-1.8519E-10 -2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="-1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LX-_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LX-_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LX-_joint"
+    type="continuous">
+    <origin
+      xyz="-0.122 0.071 -0.071"
+      rpy="1.5708 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="LX-_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="RX+_Link">
+    <inertial>
+      <origin
+        xyz="1.8519E-10 2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="-7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RX+_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RX+_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RX+_joint"
+    type="continuous">
+    <origin
+      xyz="0.122 -0.071 -0.071"
+      rpy="1.5708 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="RX+_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="RX-_Link">
+    <inertial>
+      <origin
+        xyz="1.852E-10 2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="-7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RX-_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RX-_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RX-_joint"
+    type="continuous">
+    <origin
+      xyz="-0.122 -0.071 0.071"
+      rpy="1.5708 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="RX-_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="FY+_Link">
+    <inertial>
+      <origin
+        xyz="-1.852E-10 -2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="-1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/FY+_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/FY+_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FY+_joint"
+    type="continuous">
+    <origin
+      xyz="0.071 0.122 0.071"
+      rpy="1.5708 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="FY+_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="FY-_Link">
+    <inertial>
+      <origin
+        xyz="1.852E-10 2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="-7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/FY-_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/FY-_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FY-_joint"
+    type="continuous">
+    <origin
+      xyz="0.071 -0.122 -0.071"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="FY-_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="AY+_Link">
+    <inertial>
+      <origin
+        xyz="-2.9906E-10 1.852E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="-1.1922E-14"
+        ixz="7.8541E-15"
+        iyy="2.5177E-06"
+        iyz="1.4822E-13"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/AY+_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/AY+_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="AY+_joint"
+    type="continuous">
+    <origin
+      xyz="-0.071 0.122 -0.071"
+      rpy="1.5708 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="AY+_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="AY-_Link">
+    <inertial>
+      <origin
+        xyz="2.9906E-10 -1.852E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="-1.1922E-14"
+        ixz="-7.8541E-15"
+        iyy="2.5177E-06"
+        iyz="-1.4822E-13"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/AY-_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/AY-_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="AY-_joint"
+    type="continuous">
+    <origin
+      xyz="-0.071 -0.122 0.071"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="AY-_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="LZ+_Link">
+    <inertial>
+      <origin
+        xyz="2.9906E-10 -1.852E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="-1.1922E-14"
+        ixz="-7.8541E-15"
+        iyy="2.5177E-06"
+        iyz="-1.4822E-13"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LZ+_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LZ+_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LZ+_joint"
+    type="continuous">
+    <origin
+      xyz="0.071 0.071 0.122"
+      rpy="0 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="LZ+_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="LZ-_Link">
+    <inertial>
+      <origin
+        xyz="-1.852E-10 -2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="-1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LZ-_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/LZ-_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LZ-_joint"
+    type="continuous">
+    <origin
+      xyz="-0.071 0.071 -0.122"
+      rpy="3.1416 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="LZ-_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="RZ+_Link">
+    <inertial>
+      <origin
+        xyz="-1.852E-10 -2.9906E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="1.1922E-14"
+        ixz="-1.4822E-13"
+        iyy="2.5177E-06"
+        iyz="7.8541E-15"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RZ+_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RZ+_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RZ+_joint"
+    type="continuous">
+    <origin
+      xyz="-0.071 -0.071 0.122"
+      rpy="0 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="RZ+_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="RZ-_Link">
+    <inertial>
+      <origin
+        xyz="2.9906E-10 -1.852E-10 -0.017338"
+        rpy="0 0 0" />
+      <mass
+        value="0.039411" />
+      <inertia
+        ixx="2.5177E-06"
+        ixy="-1.1922E-14"
+        ixz="-7.8541E-15"
+        iyy="2.5177E-06"
+        iyz="-1.4822E-13"
+        izz="2.7426E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RZ-_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.22353 0.22353 0.22353 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/RZ-_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RZ-_joint"
+    type="continuous">
+    <origin
+      xyz="0.071 -0.071 -0.122"
+      rpy="-3.1416 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="RZ-_Link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="T265_Link">
+    <inertial>
+      <origin
+        xyz="-0.001386 -0.0091923 -2.5634E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.06" />
+      <inertia
+        ixx="6.1726E-05"
+        ixy="3.3535E-08"
+        ixz="-7.633E-11"
+        iyy="3.6882E-06"
+        iyz="1.473E-12"
+        izz="5.9549E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/T265_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.7 0.7 0.7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/T265_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="T265_joint"
+    type="fixed">
+    <origin
+      xyz="0.1193 0 0.07625"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="T265_Link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="D435i_Link">
+    <inertial>
+      <origin
+        xyz="-0.001386 -0.0091923 -2.5634E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.072" />
+      <inertia
+        ixx="6.1726E-05"
+        ixy="3.3535E-08"
+        ixz="-7.633E-11"
+        iyy="3.6882E-06"
+        iyz="1.473E-12"
+        izz="5.9549E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/D435i_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_description/meshes/D435i_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="D435i_joint"
+    type="fixed">
+    <origin
+      xyz="0.11555 0.0175 0.0515"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="D435i_Link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

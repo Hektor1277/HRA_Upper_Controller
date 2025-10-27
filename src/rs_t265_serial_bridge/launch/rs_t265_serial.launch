@@ -1,0 +1,187 @@
+<?xml version="1.0"?>
+<launch>
+  <!--
+    File: rs_t265_serial.launch
+    功能：启动 T265 驱动、机器人 URDF、robot_state_publisher 及串口桥接节点
+    
+    启动流程：
+    catkin_make
+    source devel/setup.bash
+    roslaunch rs_t265_serial_bridge rs_t265_serial.launch config:=ground_testing  //以地面验证模式启动
+    roslaunch rs_t265_serial_bridge rs_t265_serial.launch config:=free_flying     //以自由飞行（机器人本体）模式启动
+
+    若要以调试模式启动，则设置 config 参数为 debug，例：：
+    roslaunch rs_t265_serial_bridge rs_t265_serial.launch mode:=debug config:=free_flying
+    
+    验证TF树：
+    rosrun tf2_tools view_frames.py  //绘制TF树，并生成PDF
+    rosrun tf tf_monitor
+    rosrun tf tf_echo (frame1) (frame2) //查看tf变换
+    
+    验证坐标系：
+    rostopic echo -n1 /rs_t265/odom/sample/header/frame_id
+    rostopic echo -n1 /rs_t265/imu/header/frame_id
+    
+    
+  -->
+
+  <!-- —— 参数定义 —— -->
+  <!-- 选择运行模式：debug 或 operating -->
+  <arg name="mode" default="operating" doc="选择运行模式: debug 或 operating"/>
+
+  <!-- 选择构型：free_flying 或 ground_testing -->
+  <arg name="config" default="ground_testing" doc="选择构型，取值: free_flying 或 ground_testing"/>
+
+  <!-- 指向两套 URDF 文件 -->
+  <arg name="urdf_free" default="$(find HRA_description)/urdf/HRA_description.urdf" doc="free_flying 机型的 URDF 文件路径"/>
+  <arg name="urdf_ground" default="$(find HRA_AFD_assmebly)/urdf/HRA_AFD_assmebly.urdf" doc="ground_testing 机型的 URDF 文件路径"/>
+
+  <!-- 各构型对应的相机静态偏置（单位：米） -->
+  <arg name="offset_x_free_flying" default="0.1193"/>
+  <arg name="offset_y_free_flying" default="0.0000"/>
+  <arg name="offset_z_free_flying" default="0.07625"/>
+
+  <arg name="offset_x_ground_testing" default="0.1193"/>
+  <arg name="offset_y_ground_testing" default="0.0000"/>
+  <arg name="offset_z_ground_testing" default="0.36925"/>
+
+  <!-- 通用偏置，根据 robot_config 选择对应构型的值 -->
+  <arg name="offset_x" default="$(eval arg('offset_x_' + arg('config')))"/>
+  <arg name="offset_y" default="$(eval arg('offset_y_' + arg('config')))"/>
+  <arg name="offset_z" default="$(eval arg('offset_z_' + arg('config')))"/>
+
+  <!-- 启动 realsense2_camera T265 节点 -->
+  <!-- 
+      realsense2_camera 驱动需要以 nodelet 形式启动，这里用 nodelet_manager+nodelet 
+      并把 publish_odom_tf 设置为 true，enable_pose 设置为 true（以便发布 /$(arg camera)/odom/sample 和 /$(arg camera)/imu）
+    -->
+  <!-- change the serial number to the correct one for the camera that is being used -->
+  <arg name="serial_no" default="133122110857"/>
+  <!-- d435I: 147322072036 t265: 133122110857 -->
+  <arg name="json_file_path" default=""/>
+  <arg name="camera" default="rs_t265"/>
+  <arg name="tf_prefix" default="$(arg camera)"/>
+  <arg name="initial_reset" default="true"/>
+
+  <arg name="fisheye_width" default="848"/>
+  <arg name="fisheye_height" default="800"/>
+  <arg name="enable_fisheye1" default="true"/>
+  <arg name="enable_fisheye2" default="true"/>
+
+  <arg name="fisheye_fps" default="30"/>
+
+  <arg name="gyro_fps" default="200"/>
+  <arg name="accel_fps" default="62"/>
+  <arg name="enable_gyro" default="true"/>
+  <arg name="enable_accel" default="true"/>
+  <arg name="enable_pose" default="true"/>
+
+  <arg name="enable_sync" default="false"/>
+
+  <arg name="linear_accel_cov" default="0.01"/>
+  <arg name="unite_imu_method" default="linear_interpolation"/>
+  <arg name="publish_odom_tf" default="true"/>
+  <arg name="base_frame_id" default="$(arg tf_prefix)_link"/>
+  <arg name="pose_frame_id" default="$(arg tf_prefix)_pose_frame"/>
+
+
+  <group ns="$(arg camera)">
+    <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+      <arg name="tf_prefix" value="$(arg tf_prefix)"/>
+      <arg name="serial_no" value="$(arg serial_no)"/>
+      <arg name="json_file_path" value="$(arg json_file_path)"/>
+
+      <arg name="enable_sync" value="$(arg enable_sync)"/>
+
+      <arg name="fisheye_width" value="$(arg fisheye_width)"/>
+      <arg name="fisheye_height" value="$(arg fisheye_height)"/>
+      <arg name="enable_fisheye1" value="$(arg enable_fisheye1)"/>
+      <arg name="enable_fisheye2" value="$(arg enable_fisheye2)"/>
+
+      <arg name="fisheye_fps" value="$(arg fisheye_fps)"/>
+      <arg name="gyro_fps" value="$(arg gyro_fps)"/>
+      <arg name="accel_fps" value="$(arg accel_fps)"/>
+      <arg name="enable_gyro" value="$(arg enable_gyro)"/>
+      <arg name="enable_accel" value="$(arg enable_accel)"/>
+      <arg name="enable_pose" value="$(arg enable_pose)"/>
+
+      <arg name="linear_accel_cov" value="$(arg linear_accel_cov)"/>
+      <arg name="initial_reset" value="$(arg initial_reset)"/>
+      <arg name="unite_imu_method" value="$(arg unite_imu_method)"/>
+      <arg name="publish_odom_tf" value="$(arg publish_odom_tf)"/>
+      <arg name="base_frame_id" value="$(arg base_frame_id)"/>
+      <arg name="pose_frame_id" value="$(arg pose_frame_id)"/>
+    </include>
+  </group>
+
+  <!-- —— 桥接节点启动参数 —— -->
+  <arg name="odom_topic" value="/$(arg tf_prefix)/odom/sample"/>
+  <arg name="imu_topic" value="/$(arg tf_prefix)/imu"/>
+  <arg name="base_link" value="base_link"/>
+  <arg name="odom" value="$(arg tf_prefix)_odom_frame"/>
+  <arg name="pose" value="$(arg tf_prefix)_pose_frame"/>
+  <!-- —— THS0:8 TX, 10 RX —— -->
+  <arg name="port" default="/dev/ttyTHS0"/>
+  <arg name="baud" default="230400"/>
+  <!-- 根据 mode 自动给出默认频率 -->
+  <arg name="send_rate" default="$(eval '100' if arg('mode') == 'operating' else '0.2')" doc="serial frame rate [Hz]" />
+
+  <!-- 上位机虚拟串口测试节点，用于监听测试节点发送数据帧 -->
+  <!-- rs_t265_serial_bridge_monitor.launch 片段 -->
+  <arg name="loop_rx" default="/dev/pts/1"/>
+
+  <node pkg="rs_t265_serial_bridge" type="rs_t265_serial_bridge_monitor" name="rs_t265_serial_bridge_monitor" output="screen">
+    <param name="port" value="$(arg loop_rx)"/>
+  </node>
+  <!-- 上位机虚拟串口测试节点，用于监听串口节点发送数据帧 -->
+
+  <!-- 发布 URDF 以及关联的 robot_state_publisher，然后在每个分支里写静态变换： -->
+  <!--    (pose_frame => base_link) -->
+  <!-- 第一构型: free_flying -->
+  <group if="$(eval arg('config')=='free_flying')">
+    <!-- 加载 free_flying.urdf 到 /robot_description 参数里 -->
+    <param name="robot_description" command="cat $(arg urdf_free)"/>
+    <!-- 启动 robot_state_publisher，内部会把 base_link => T265_Link 等所有静态关节关系发布出来 -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" value="50.0"/>
+    </node>
+    <!-- 发布 rs_t265_link => base_link 的静态偏置 -->
+    <!-- 从 free_flying.urdf 中读得 base_link => T265_Link 的偏置为 (0.1193 0 0.07625)， -->
+    <!-- 发布反向即 (-0.1193, -0.00, -0.07625) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_base_free" args="-0.1193  -0.00  -0.07625   0 0 0  rs_t265_link   base_link"/>
+  </group>
+
+  <!-- 第二构型: ground_testing -->
+  <group if="$(eval arg('config')=='ground_testing')">
+    <!-- 加载 ground_testing.urdf -->
+    <param name="robot_description" command="cat $(arg urdf_ground)"/>
+    <!-- 启动 robot_state_publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+      <param name="publish_frequency" value="50.0"/>
+    </node>
+    <!-- 发布 rs_t265_link => base_link 的静态偏置 -->
+    <!-- 从 ground_testing.urdf 中读得 base_link => T265_Link 的偏置为 (0.1193, 0.00, 0.36925)， -->
+    <!-- 发布反向即 (-0.1193, -0.00, -0.36925) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_base_ground" args="-0.1193  -0.00  -0.36925   0 0 0  rs_t265_link   base_link"/>
+  </group>
+  <!-- —— 启动 串口桥接节点 —— -->
+  <node pkg="rs_t265_serial_bridge" type="rs_t265_serial_bridge_node" name="rs_t265_serial_bridge_node" output="screen">
+    <param name="odom_topic" value="$(arg odom_topic)"/>
+    <param name="imu_topic" value="$(arg imu_topic)"/>
+    <param name="base_link" value="$(arg base_link)"/>
+    <param name="odom" value="$(arg tf_prefix)_odom_frame"/>
+    <param name="pose" value="$(arg tf_prefix)_pose_frame"/>
+    <param name="port" value="$(arg port)"/>
+    <param name="baud" value="$(arg baud)"/>
+    <param name="send_rate" value="$(arg send_rate)"/>
+
+    <!-- 传入计算初始位置补偿需要的静态偏置 -->
+    <param name="offset_x" value="$(arg offset_x)"/>
+    <param name="offset_y" value="$(arg offset_y)"/>
+    <param name="offset_z" value="$(arg offset_z)"/>
+  </node>
+
+  <!-- 启动新的轨迹生成器节点 -->
+  <node pkg="rs_t265_serial_bridge" type="trajectory_generator_node" name="trajectory_generator" output="screen" />
+
+</launch>

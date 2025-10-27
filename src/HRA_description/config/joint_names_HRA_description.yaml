@@ -1,0 +1,1 @@
+controller_joint_names: ['', 'LX+_joint', 'LX-_joint', 'RX+_joint', 'RX-_joint', 'FY+_joint', 'FY-_joint', 'AY+_joint', 'AY-_joint', 'LZ+_joint', 'LZ-_joint', 'RZ+_joint', 'RZ-_joint', ]
