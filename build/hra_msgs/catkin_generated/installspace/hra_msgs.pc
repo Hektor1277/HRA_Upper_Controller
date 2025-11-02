@@ -1,4 +1,4 @@
-prefix=/usr/local
+prefix=/home/hra/catkin_ws/install
 
 Name: hra_msgs
 Description: Description of hra_msgs

@@ -1,2 +1,2 @@
-HRA_AFD_assmebly:HRA_description:hra_msgs:realsense-ros/realsense2_camera:realsense-ros/realsense2_description:rs_t265_serial_bridge
+HRA_AFD_assmebly:HRA_description:hra_control_ui:hra_msgs:realsense-ros/realsense2_camera:realsense-ros/realsense2_description:rs_t265_serial_bridge
 -DCATKIN_DEVEL_PREFIX=/home/hra/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/hra/catkin_ws/install -G Unix Makefiles

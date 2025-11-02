@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "../devel/lib/rs_t265_serial_bridge/trajectory_generator_node"
-  "../devel/lib/rs_t265_serial_bridge/trajectory_generator_node.pdb"
+  "/home/hra/catkin_ws/devel/lib/rs_t265_serial_bridge/trajectory_generator_node"
+  "/home/hra/catkin_ws/devel/lib/rs_t265_serial_bridge/trajectory_generator_node.pdb"
   "CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o"
 )
 

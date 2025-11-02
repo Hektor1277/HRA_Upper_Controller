@@ -1,8 +1,0 @@
-prefix=/home/ivaffr/catkin_ws/install
-
-Name: t265_serial_bridge
-Description: Description of t265_serial_bridge
-Version: 0.0.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: rospy roscpp serial nav_msgs std_msgs sensor_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs tf2_kdl HRA_AFD_assmebly HRA_description robot_state_publisher

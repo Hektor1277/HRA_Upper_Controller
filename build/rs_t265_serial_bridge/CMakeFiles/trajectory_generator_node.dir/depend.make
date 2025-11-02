@@ -23,12 +23,14 @@ rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_ge
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/actionlib_msgs/GoalStatusArray.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/Point.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/Pose.h
+rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/PoseStamped.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/PoseWithCovariance.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/Quaternion.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/Twist.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/TwistWithCovariance.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/geometry_msgs/Vector3.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/nav_msgs/Odometry.h
+rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/nav_msgs/Path.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/ros/advertise_options.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/ros/advertise_service_options.h
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/src/trajectory_generator_node.cpp.o: /opt/ros/noetic/include/ros/assert.h

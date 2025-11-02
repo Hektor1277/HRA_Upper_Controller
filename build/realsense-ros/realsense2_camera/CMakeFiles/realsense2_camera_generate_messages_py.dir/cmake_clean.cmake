@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
-  "../../devel/lib/python3/dist-packages/realsense2_camera/msg/_Extrinsics.py"
-  "../../devel/lib/python3/dist-packages/realsense2_camera/msg/_IMUInfo.py"
-  "../../devel/lib/python3/dist-packages/realsense2_camera/msg/__init__.py"
+  "/home/hra/catkin_ws/devel/lib/python3/dist-packages/realsense2_camera/msg/_Extrinsics.py"
+  "/home/hra/catkin_ws/devel/lib/python3/dist-packages/realsense2_camera/msg/_IMUInfo.py"
+  "/home/hra/catkin_ws/devel/lib/python3/dist-packages/realsense2_camera/msg/__init__.py"
   "CMakeFiles/realsense2_camera_generate_messages_py"
 )
 

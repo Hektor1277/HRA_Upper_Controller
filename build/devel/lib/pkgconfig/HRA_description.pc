@@ -1,8 +1,0 @@
-prefix=/home/hra/catkin_ws/build/devel
-
-Name: HRA_description
-Description: Description of HRA_description
-Version: 1.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

@@ -1,0 +1,23 @@
+<launch>
+    <!--
+        File: dashboard.launch
+        功能: 一键启动HRA机器人所有核心节点以及集成化的RQT控制台
+
+        使用方法:
+        source devel/setup.bash
+        roslaunch hra_control_ui dashboard.launch
+    -->
+
+    <!-- 步骤 1: 包含并启动所有机器人后端节点 -->
+    <!-- 我们复用之前的launch文件，这是一种非常好的模块化实践 -->
+    <include file="$(find rs_t265_serial_bridge)/launch/rs_t265_serial.launch">
+        <!-- 你可以在这里覆盖 rs_t265_serial.launch 中的参数，例如 -->
+        <!-- <arg name="config" value="free_flying"/> -->
+        <arg name="config" value="free_flying"/>
+        <!-- <arg name="mode" value="debug"/> -->
+    </include>
+
+    <!-- 步骤 2: 启动RQT GUI，并自动加载我们保存的仪表盘布局 -->
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" respawn="false" output="screen" args="--perspective-file $(find hra_control_ui)/resource/hra_dashboard.perspective"/>
+
+</launch>

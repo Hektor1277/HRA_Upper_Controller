@@ -68,13 +68,13 @@ set(hra_msgs_CONFIG_INCLUDED TRUE)
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
   set(hra_msgs_SOURCE_PREFIX /home/hra/catkin_ws/src/hra_msgs)
-  set(hra_msgs_DEVEL_PREFIX /home/hra/catkin_ws/build/devel)
+  set(hra_msgs_DEVEL_PREFIX /home/hra/catkin_ws/devel)
   set(hra_msgs_INSTALL_PREFIX "")
   set(hra_msgs_PREFIX ${hra_msgs_DEVEL_PREFIX})
 else()
   set(hra_msgs_SOURCE_PREFIX "")
   set(hra_msgs_DEVEL_PREFIX "")
-  set(hra_msgs_INSTALL_PREFIX /usr/local)
+  set(hra_msgs_INSTALL_PREFIX /home/hra/catkin_ws/install)
   set(hra_msgs_PREFIX ${hra_msgs_INSTALL_PREFIX})
 endif()
 
@@ -156,7 +156,7 @@ foreach(library ${libraries})
     set(lib_path "")
     set(lib "${library}-NOTFOUND")
     # since the path where the library is found is returned we have to iterate over the paths manually
-    foreach(path /usr/local/lib;/opt/ros/noetic/lib)
+    foreach(path /home/hra/catkin_ws/install/lib;/home/hra/catkin_ws/devel/lib;/opt/ros/noetic/lib)
       find_library(lib ${library}
         PATHS ${path}
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)

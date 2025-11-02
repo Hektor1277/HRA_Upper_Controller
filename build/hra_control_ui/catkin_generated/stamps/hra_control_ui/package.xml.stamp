@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>hra_control_ui</name>
+  <version>0.0.1</version>
+  <description>The HRA Mission Control UI plugin</description>
+
+  <maintainer email="hra@todo.todo">hra</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>rqt_gui</depend>
+  <depend>rqt_gui_py</depend>
+  <depend>actionlib</depend>
+  <depend>hra_msgs</depend>
+
+  <!-- This is the critical tag that registers the plugin with RQT -->
+  <export>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>

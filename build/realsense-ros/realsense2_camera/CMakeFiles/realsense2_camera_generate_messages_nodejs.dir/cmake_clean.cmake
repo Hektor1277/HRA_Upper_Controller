@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "../../devel/share/gennodejs/ros/realsense2_camera/msg/Extrinsics.js"
-  "../../devel/share/gennodejs/ros/realsense2_camera/msg/IMUInfo.js"
+  "/home/hra/catkin_ws/devel/share/gennodejs/ros/realsense2_camera/msg/Extrinsics.js"
+  "/home/hra/catkin_ws/devel/share/gennodejs/ros/realsense2_camera/msg/IMUInfo.js"
   "CMakeFiles/realsense2_camera_generate_messages_nodejs"
 )
 

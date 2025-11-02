@@ -1,8 +1,0 @@
-prefix=/home/hra/catkin_ws/build/devel
-
-Name: rs_t265_serial_bridge
-Description: Description of rs_t265_serial_bridge
-Version: 0.0.0
-Cflags: -I/home/hra/catkin_ws/src/rs_t265_serial_bridge/include
-Libs: -L${prefix}/lib 
-Requires: roscpp serial nav_msgs std_msgs sensor_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs tf2_sensor_msgs tf2_kdl HRA_AFD_assmebly HRA_description robot_state_publisher

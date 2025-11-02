@@ -7,14 +7,21 @@
  *   3. 内部实现一个五次多项式轨迹求解器。
  *   4. 任务执行期间，以100Hz频率采样轨迹并发布期望状态。
  *
- * 作者：Hektor Sun & AI Assistant
+ * 新增功能:
+ *   - 包含 nav_msgs/Path.h
+ *   - 新增 /desired_path 发布器，用于 RViz 可视化
+ *   - 规划成功后，密集采样整条轨迹并发布 Path 消息
+ *
+ * 作者：Hektor Sun
  * 日期：2025-10-25
  */
 
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <Eigen/Core>
@@ -77,6 +84,7 @@ protected:
 
     ros::Subscriber odom_sub_;
     ros::Publisher traj_point_pub_;
+    ros::Publisher desired_path_pub_;
     ros::Timer sampling_timer_;
 
     nav_msgs::Odometry current_odom_;
@@ -93,6 +101,7 @@ public:
     {
         odom_sub_ = nh_.subscribe("/rs_t265/odom/sample", 1, &TrajectoryGenerator::odomCB, this);
         traj_point_pub_ = nh_.advertise<hra_msgs::TrajectoryPoint>("/desired_state_topic", 10);
+        desired_path_pub_ = nh_.advertise<nav_msgs::Path>("/desired_path", 1, true); // <-- 新增: true表示latched，新订阅者能收到最后一条消息
 
         as_.start();
         ROS_INFO("TrajectoryGenerator Action Server started.");
@@ -155,6 +164,9 @@ public:
             solvers_[i].computeCoeffs(start_p[i], start_v[i], start_a[i], end_p[i], end_v[i], end_a[i], trajectory_duration_);
         }
 
+        // --- 新增: 发布可视化路径 ---
+        publishVisualPath();
+
         ROS_INFO("Trajectory planned successfully. Executing for %.2f seconds.", trajectory_duration_);
 
         // --- 3. 启动100Hz定时器开始执行 ---
@@ -185,6 +197,42 @@ public:
         result.success = true;
         as_.setSucceeded(result);
         ROS_INFO("Trajectory execution finished.");
+    }
+
+    // 发布完整路径给RViz
+    void publishVisualPath()
+    {
+        nav_msgs::Path path_msg;
+        path_msg.header.stamp = ros::Time::now();
+        path_msg.header.frame_id = "rs_t265_odom_frame"; // 路径在世界坐标系下
+
+        // 密集采样，例如每20ms一个点
+        for (double t = 0.0; t <= trajectory_duration_; t += 0.02)
+        {
+            geometry_msgs::PoseStamped pose_stamped;
+            pose_stamped.header.stamp = path_msg.header.stamp; // 所有点用同一个时间戳
+            pose_stamped.header.frame_id = path_msg.header.frame_id;
+
+            double p[6], v[6], a[6];
+            for (int i = 0; i < 6; ++i)
+            {
+                std::tie(p[i], v[i], a[i]) = solvers_[i].sample(t);
+            }
+
+            pose_stamped.pose.position.x = p[0];
+            pose_stamped.pose.position.y = p[1];
+            pose_stamped.pose.position.z = p[2];
+
+            tf2::Quaternion q;
+            q.setRPY(p[3], p[4], p[5]);
+            pose_stamped.pose.orientation.x = q.x();
+            pose_stamped.pose.orientation.y = q.y();
+            pose_stamped.pose.orientation.z = q.z();
+            pose_stamped.pose.orientation.w = q.w();
+
+            path_msg.poses.push_back(pose_stamped);
+        }
+        desired_path_pub_.publish(path_msg);
     }
 
     void timerCB(const ros::TimerEvent &event)

@@ -1,4 +1,4 @@
-prefix=/usr/local
+prefix=/home/hra/catkin_ws/install
 
 Name: HRA_AFD_assmebly
 Description: Description of HRA_AFD_assmebly

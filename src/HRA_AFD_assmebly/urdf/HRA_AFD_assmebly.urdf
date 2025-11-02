@@ -98,7 +98,7 @@
   </link>
   <joint
     name="LX+_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="0.122 0.071 0.364"
       rpy="1.5708 0 1.5708" />
@@ -151,7 +151,7 @@
   </link>
   <joint
     name="LX-_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="-0.122 0.071 0.222"
       rpy="1.5708 0 -1.5708" />
@@ -204,7 +204,7 @@
   </link>
   <joint
     name="RX+_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="0.122 -0.071 0.222"
       rpy="1.5708 0 1.5708" />
@@ -257,7 +257,7 @@
   </link>
   <joint
     name="RX-_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="-0.122 -0.071 0.364"
       rpy="1.5708 0 -1.5708" />
@@ -310,7 +310,7 @@
   </link>
   <joint
     name="FY+_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="0.071 0.122 0.364"
       rpy="1.5708 0 3.1416" />
@@ -363,7 +363,7 @@
   </link>
   <joint
     name="FY-_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="0.071 -0.122 0.222"
       rpy="1.5708 0 0" />
@@ -416,7 +416,7 @@
   </link>
   <joint
     name="AY+_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="-0.071 0.122 0.222"
       rpy="1.5708 0 -3.1416" />
@@ -469,7 +469,7 @@
   </link>
   <joint
     name="AY-_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="-0.071 -0.122 0.364"
       rpy="1.5708 0 0" />
@@ -522,7 +522,7 @@
   </link>
   <joint
     name="LZ+_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="0.071 0.071 0.415"
       rpy="0 0 1.5708" />
@@ -575,7 +575,7 @@
   </link>
   <joint
     name="LZ-_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="-0.071 0.071 0.171"
       rpy="3.1416 0 -1.5708" />
@@ -628,7 +628,7 @@
   </link>
   <joint
     name="RZ+_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="-0.071 -0.071 0.415"
       rpy="0 0 1.5708" />
@@ -681,7 +681,7 @@
   </link>
   <joint
     name="RZ-_joint"
-    type="continuous">
+    type="fixed">
     <origin
       xyz="0.071 -0.071 0.171"
       rpy="-3.1416 0 -1.5708" />

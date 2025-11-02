@@ -23,29 +23,32 @@
 #include <ros/ros.h>           // ROS基本头文件，提供ROS相关函数
 #include <serial/serial.h>     // 提供串口通信功能
 #include <nav_msgs/Odometry.h> // ROS里程计数据消息类型（位姿与速度）
+#include <nav_msgs/Path.h>     // ROS路径消息类型
+#include <std_msgs/Float64.h>  // ROS标准浮点数消息类型
 #include <sensor_msgs/Imu.h>   // ROS IMU数据消息类型（加速度与角速度）
 
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>          // TF2 监听器，用于接收和缓存变换
+#include <tf2_ros/buffer.h>                      // TF2 Buffer，用于存储和查询变换
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h> // tf2 与 geometry_msgs 的桥接
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
-#include <tf2_kdl/tf2_kdl.h> // tf2_kdl: KDL::Twist support
-#include <tf2/convert.h>     // 让 fromMsg / toMsg / doTransform 模板可见
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <kdl/frames.hpp> // KDL::Twist, Frames
+#include <tf2_kdl/tf2_kdl.h>          // tf2_kdl: KDL::Twist support
+#include <tf2/convert.h>              // 让 fromMsg / toMsg / doTransform 模板可见
+#include <tf2/LinearMath/Matrix3x3.h> // tf2 矩阵运算
+#include <kdl/frames.hpp>             // KDL::Twist, Frames
 
 #include <geometry_msgs/PoseStamped.h>    // for PoseStamped
 #include <geometry_msgs/TwistStamped.h>   // for TwistStamped
 #include <geometry_msgs/Vector3Stamped.h> // for Vector3Stamped
+#include <geometry_msgs/PoseStamped.h>    // for PoseStamped
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <vector>    // 动态数组类型，便于数据打包发送
-#include <mutex>     // 提供互斥锁，确保多线程安全性
-#include <algorithm> // std::max, std::min
-#include <cmath>     // M_PI
-#include <deque>     // 用于缓存 IMU 消息
-#include <array>
+#include <Eigen/Core>    // Eigen核心头文件，提供矩阵和向量操作
+#include <Eigen/Dense>   // Eigen稠密矩阵头文件，提供线性代数运算
+#include <vector>        // 动态数组类型，便于数据打包发送
+#include <mutex>         // 提供互斥锁，确保多线程安全性
+#include <algorithm>     // std::max, std::min
+#include <cmath>         // M_PI
+#include <deque>         // 用于缓存 IMU 消息
+#include <array>         // 用于存储固定大小的数组
 
 #include "hra_msgs/TrajectoryPoint.h"   //轨迹生成器消息类型
 
@@ -89,8 +92,34 @@ std::mutex desired_state_mutex;
 bool desired_state_received = false;
 ros::Time last_desired_state_time;
 
-// 角加速度计算所需
-static const int ACC_WINDOW_SIZE = 5; // 角加速度滑动平均窗口
+// 可视化相关的全局变量
+ros::Publisher actual_path_pub;
+nav_msgs::Path actual_path_msg; // 用于累积实际路径
+
+// rqt_plot 发布器
+// 位置
+ros::Publisher plot_pos_x_des_pub, plot_pos_x_act_pub;
+ros::Publisher plot_pos_y_des_pub, plot_pos_y_act_pub;
+ros::Publisher plot_pos_z_des_pub, plot_pos_z_act_pub;
+ros::Publisher plot_vel_x_des_pub, plot_vel_x_act_pub;
+ros::Publisher plot_vel_y_des_pub, plot_vel_y_act_pub;
+ros::Publisher plot_vel_z_des_pub, plot_vel_z_act_pub;
+ros::Publisher plot_acc_x_des_pub, plot_acc_x_act_pub;
+ros::Publisher plot_acc_y_des_pub, plot_acc_y_act_pub;
+ros::Publisher plot_acc_z_des_pub, plot_acc_z_act_pub;
+// 姿态
+ros::Publisher plot_ang_x_des_pub, plot_ang_x_act_pub;
+ros::Publisher plot_ang_y_des_pub, plot_ang_y_act_pub;
+ros::Publisher plot_ang_z_des_pub, plot_ang_z_act_pub;
+ros::Publisher plot_ang_vel_x_des_pub, plot_ang_vel_x_act_pub;
+ros::Publisher plot_ang_vel_y_des_pub, plot_ang_vel_y_act_pub;
+ros::Publisher plot_ang_vel_z_des_pub, plot_ang_vel_z_act_pub;
+ros::Publisher plot_ang_acc_x_des_pub, plot_ang_acc_x_act_pub;
+ros::Publisher plot_ang_acc_y_des_pub, plot_ang_acc_y_act_pub;
+ros::Publisher plot_ang_acc_z_des_pub, plot_ang_acc_z_act_pub;
+
+    // 角加速度计算变量
+    static const int ACC_WINDOW_SIZE = 5; // 角加速度滑动平均窗口
 std::deque<std::array<float, 3>> ang_acc_buffer;
 std::array<float, 3> prev_ang_vel = {0.0f, 0.0f, 0.0f}; // 保存上次角速度与时间，用于差分计算
 ros::Time prev_imu_time;
@@ -534,11 +563,124 @@ void timerCallback(const ros::TimerEvent &)
   for (float v : ang_acc)
     append(v);
 
+  // 8. 发布可视化数据
+  // 8.1 更新并发布实际路径
+  geometry_msgs::PoseStamped current_pose_stamped;
+  current_pose_stamped.header.stamp = ros::Time::now();
+  current_pose_stamped.header.frame_id = odom;
+  current_pose_stamped.pose.position.x = pos[0];
+  current_pose_stamped.pose.position.y = pos[1];
+  current_pose_stamped.pose.position.z = pos[2];
+  current_pose_stamped.pose.orientation = tf_odom_base.transform.rotation;
+
+  actual_path_msg.header = current_pose_stamped.header;
+  actual_path_msg.poses.push_back(current_pose_stamped);
+  // // 可选：为了防止路径过长，可以限制其大小
+  // if (actual_path_msg.poses.size() > 20000)
+  // { // 保留最新的20000个点
+  //   actual_path_msg.poses.erase(actual_path_msg.poses.begin());
+  // }
+  // actual_path_pub.publish(actual_path_msg);
+
+  // 8.2 发布用于 rqt_plot 的数据
+  std_msgs::Float64 msg_f64;
+  // 位置
+  msg_f64.data = desired_state.pose.position.x;
+  plot_pos_x_des_pub.publish(msg_f64);
+  msg_f64.data = pos[0];
+  plot_pos_x_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.pose.position.y;
+  plot_pos_y_des_pub.publish(msg_f64);
+  msg_f64.data = pos[1];
+  plot_pos_y_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.pose.position.z;
+  plot_pos_z_des_pub.publish(msg_f64);
+  msg_f64.data = pos[2];
+  plot_pos_z_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.velocity.linear.x;
+  plot_vel_x_des_pub.publish(msg_f64);
+  msg_f64.data = vel[0];
+  plot_vel_x_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.velocity.linear.y;
+  plot_vel_y_des_pub.publish(msg_f64);
+  msg_f64.data = vel[1];
+  plot_vel_y_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.velocity.linear.z;
+  plot_vel_z_des_pub.publish(msg_f64);
+  msg_f64.data = vel[2];
+  plot_vel_z_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.acceleration.linear.x;
+  plot_acc_x_des_pub.publish(msg_f64);
+  msg_f64.data = acc[0];
+  plot_acc_x_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.acceleration.linear.y;
+  plot_acc_y_des_pub.publish(msg_f64);
+  msg_f64.data = acc[1];
+  plot_acc_y_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.acceleration.linear.z;
+  plot_acc_z_des_pub.publish(msg_f64);
+  msg_f64.data = acc[2];
+  plot_acc_z_act_pub.publish(msg_f64);
+
+  // 角度
+  msg_f64.data = r_des;
+  plot_ang_x_des_pub.publish(msg_f64);
+  msg_f64.data = ang[0];
+  plot_ang_x_act_pub.publish(msg_f64);
+
+  msg_f64.data = p_des;
+  plot_ang_y_des_pub.publish(msg_f64);
+  msg_f64.data = ang[1];
+  plot_ang_y_act_pub.publish(msg_f64);
+
+  msg_f64.data = y_des;
+  plot_ang_z_des_pub.publish(msg_f64);
+  msg_f64.data = ang[2];
+  plot_ang_z_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.velocity.angular.x;
+  plot_ang_vel_x_des_pub.publish(msg_f64);
+  msg_f64.data = ang_vel[0];
+  plot_ang_vel_x_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.velocity.angular.y;
+  plot_ang_vel_y_des_pub.publish(msg_f64);
+  msg_f64.data = ang_vel[1];
+  plot_ang_vel_y_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.velocity.angular.z;
+  plot_ang_vel_z_des_pub.publish(msg_f64);
+  msg_f64.data = ang_vel[2];
+  plot_ang_vel_z_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.acceleration.angular.x;
+  plot_ang_acc_x_des_pub.publish(msg_f64);
+  msg_f64.data = ang_acc[0];
+  plot_ang_acc_x_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.acceleration.angular.y;
+  plot_ang_acc_y_des_pub.publish(msg_f64);
+  msg_f64.data = ang_acc[1];
+  plot_ang_acc_y_act_pub.publish(msg_f64);
+
+  msg_f64.data = desired_state.acceleration.angular.z;
+  plot_ang_acc_z_des_pub.publish(msg_f64);
+  msg_f64.data = ang_acc[2];
+  plot_ang_acc_z_act_pub.publish(msg_f64);
+
   // 8. 构建完整帧：帧头(0xAA,0xBB)、帧序号、时间戳、数据、校验、帧尾(0xCC,0xDD)
   std::vector<uint8_t> frame;
   frame.reserve(90); // 2+4+8+72+2+2
 
-  // 7.1 帧头 (2字节)
+  // 8.1 帧头 (2字节)
   frame.push_back(0xAA);
   frame.push_back(0xBB);
 
@@ -605,7 +747,7 @@ void timerCallback(const ros::TimerEvent &)
     crc += (static_cast<uint16_t>(frame[i]) << 8) | static_cast<uint16_t>(frame[i + 1]);
   }
 
-  ROS_INFO_STREAM("Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc);
+  // ROS_INFO_STREAM("Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc);
 
   // 7.5 CRC16校验和 (2 B, BE)
   frame.push_back((crc >> 8) & 0xFF);
@@ -625,20 +767,11 @@ void timerCallback(const ros::TimerEvent &)
     ROS_INFO_STREAM("frame[" << i << "]: " << std::hex << (int)frame[i]);
   }
 #endif
-  ROS_INFO_STREAM("Frame sent: " << frame.size() << " bytes.");
-  ROS_INFO_STREAM("Desired Position: [" << desired_state.pose.position.x << ", " << desired_state.pose.position.y << ", " << desired_state.pose.position.z << "]");
-  ROS_INFO_STREAM("Desired Velocity: [" << desired_state.velocity.linear.x << ", " << desired_state.velocity.linear.y << ", " << desired_state.velocity.linear.z << "]");
-  ROS_INFO_STREAM("Desired Acceleration: [" << desired_state.acceleration.linear.x << ", " << desired_state.acceleration.linear.y << ", " << desired_state.acceleration.linear.z << "]");
-  ROS_INFO_STREAM("Desired Angle(Euler): [" << r_des << ", " << p_des << ", " << y_des << "]");
-  ROS_INFO_STREAM("Desired Angular velocity: [" << desired_state.velocity.angular.x << ", " << desired_state.velocity.angular.y << ", " << desired_state.velocity.angular.z << "]");
-  ROS_INFO_STREAM("Desired Angular acceleration: [" << desired_state.acceleration.angular.x << ", " << desired_state.acceleration.angular.y << ", " << desired_state.acceleration.angular.z << "]");
-
-  ROS_INFO_STREAM("Position: [" << pos[0] << ", " << pos[1] << ", " << pos[2] << "]");
-  ROS_INFO_STREAM("Velocity: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]");
-  ROS_INFO_STREAM("Acceleration: [" << acc[0] << ", " << acc[1] << ", " << acc[2] << "]");
-  ROS_INFO_STREAM("Angle(Euler): [" << ang[0] << ", " << ang[1] << ", " << ang[2] << "]");
-  ROS_INFO_STREAM("Angular velocity: [" << ang_vel[0] << ", " << ang_vel[1] << ", " << ang_vel[2] << "]");
-  ROS_INFO_STREAM("Angular acceleration: [" << ang_acc[0] << ", " << ang_acc[1] << ", " << ang_acc[2] << "]");
+  // 使用 ROS_INFO_STREAM_THROTTLE(1.0) 将打印频率限制为每秒一次。
+  // 这既能让我们看到实时数据，又不会阻塞ROS日志系统，还能让终端显示清晰。
+  // 同时，移除了开头的 "\r"。
+  ROS_INFO_STREAM_THROTTLE(1.0,
+                           "--- Frame " << seq << " ---" << "\nFrame sent: " << frame.size() << " bytes. | Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc << "\nDesired Position: [" << desired_state.pose.position.x << ", " << desired_state.pose.position.y << ", " << desired_state.pose.position.z << "]" << "\nActual  Position: [" << pos[0] << ", " << pos[1] << ", " << pos[2] << "]" << "\nDesired Velocity: [" << desired_state.velocity.linear.x << ", " << desired_state.velocity.linear.y << ", " << desired_state.velocity.linear.z << "]" << "\nActual  Velocity: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]");
 }
 
 // ===========================================================
@@ -708,8 +841,54 @@ int main(int argc, char **argv)
   // —— 订阅T265的位姿和IMU数据 ——
   ros::Subscriber odom_sub = nh.subscribe(odom_topic, 100, odomCallback);
   ros::Subscriber imu_sub = nh.subscribe(imu_topic, 100, imuCallback);
-  
-  // **MODIFIED**：新增期望状态订阅器
+
+  // —— 初始化可视化发布器 ——
+  actual_path_pub = nh.advertise<nav_msgs::Path>("/actual_path", 1);
+  actual_path_msg.header.frame_id = "rs_t265_odom_frame";
+
+  plot_pos_x_des_pub = nh.advertise<std_msgs::Float64>("/plot/pos/x/desired", 1);
+  plot_pos_x_act_pub = nh.advertise<std_msgs::Float64>("/plot/pos/x/actual", 1);
+  plot_pos_y_des_pub = nh.advertise<std_msgs::Float64>("/plot/pos/y/desired", 1);
+  plot_pos_y_act_pub = nh.advertise<std_msgs::Float64>("/plot/pos/y/actual", 1);
+  plot_pos_z_des_pub = nh.advertise<std_msgs::Float64>("/plot/pos/z/desired", 1);
+  plot_pos_z_act_pub = nh.advertise<std_msgs::Float64>("/plot/pos/z/actual", 1);
+
+  plot_vel_x_des_pub = nh.advertise<std_msgs::Float64>("/plot/vel/x/desired", 1);
+  plot_vel_x_act_pub = nh.advertise<std_msgs::Float64>("/plot/vel/x/actual", 1);
+  plot_vel_y_des_pub = nh.advertise<std_msgs::Float64>("/plot/vel/y/desired", 1);
+  plot_vel_y_act_pub = nh.advertise<std_msgs::Float64>("/plot/vel/y/actual", 1);
+  plot_vel_z_des_pub = nh.advertise<std_msgs::Float64>("/plot/vel/z/desired", 1);
+  plot_vel_z_act_pub = nh.advertise<std_msgs::Float64>("/plot/vel/z/actual", 1);
+
+  plot_acc_x_des_pub = nh.advertise<std_msgs::Float64>("/plot/acc/x/desired", 1);
+  plot_acc_x_act_pub = nh.advertise<std_msgs::Float64>("/plot/acc/x/actual", 1);
+  plot_acc_y_des_pub = nh.advertise<std_msgs::Float64>("/plot/acc/y/desired", 1);
+  plot_acc_y_act_pub = nh.advertise<std_msgs::Float64>("/plot/acc/y/actual", 1);
+  plot_acc_z_des_pub = nh.advertise<std_msgs::Float64>("/plot/acc/z/desired", 1);
+  plot_acc_z_act_pub = nh.advertise<std_msgs::Float64>("/plot/acc/z/actual", 1);
+
+  plot_ang_x_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang/x/desired", 1);
+  plot_ang_x_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang/x/actual", 1);
+  plot_ang_y_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang/y/desired", 1);
+  plot_ang_y_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang/y/actual", 1);
+  plot_ang_z_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang/z/desired", 1);
+  plot_ang_z_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang/z/actual", 1);
+
+  plot_ang_vel_x_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang_vel/x/desired", 1);
+  plot_ang_vel_x_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang_vel/x/actual", 1);
+  plot_ang_vel_y_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang_vel/y/desired", 1);
+  plot_ang_vel_y_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang_vel/y/actual", 1);
+  plot_ang_vel_z_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang_vel/z/desired", 1);
+  plot_ang_vel_z_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang_vel/z/actual", 1);
+
+  plot_ang_acc_x_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang_acc/x/desired", 1);
+  plot_ang_acc_x_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang_acc/x/actual", 1);
+  plot_ang_acc_y_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang_acc/y/desired", 1);
+  plot_ang_acc_y_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang_acc/y/actual", 1);
+  plot_ang_acc_z_des_pub = nh.advertise<std_msgs::Float64>("/plot/ang_acc/z/desired", 1);
+  plot_ang_acc_z_act_pub = nh.advertise<std_msgs::Float64>("/plot/ang_acc/z/actual", 1);
+
+  // —— 期望状态订阅器 ——
   ros::Subscriber desired_state_sub = nh.subscribe("/desired_state_topic", 1, desiredStateCallback);
 
   // —— 定时器：使用 send_rate 而非硬编码 ——

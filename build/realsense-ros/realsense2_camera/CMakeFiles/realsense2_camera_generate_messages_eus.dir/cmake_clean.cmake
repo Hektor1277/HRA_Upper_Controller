@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
-  "../../devel/share/roseus/ros/realsense2_camera/manifest.l"
-  "../../devel/share/roseus/ros/realsense2_camera/msg/Extrinsics.l"
-  "../../devel/share/roseus/ros/realsense2_camera/msg/IMUInfo.l"
+  "/home/hra/catkin_ws/devel/share/roseus/ros/realsense2_camera/manifest.l"
+  "/home/hra/catkin_ws/devel/share/roseus/ros/realsense2_camera/msg/Extrinsics.l"
+  "/home/hra/catkin_ws/devel/share/roseus/ros/realsense2_camera/msg/IMUInfo.l"
   "CMakeFiles/realsense2_camera_generate_messages_eus"
 )
 

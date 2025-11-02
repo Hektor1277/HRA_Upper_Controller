@@ -1,0 +1,15 @@
+<library path="src">
+    <class name="HRA Control UI" type="hra_control_ui.hra_control_plugin.HraControlPlugin" base_class_type="rqt_gui_py::Plugin">
+        <description>
+      An UI for controlling the HRA robot trajectory execution.
+        </description>
+        <qtgui>
+            <group>
+                <label>HRA Tools</label>
+            </group>
+            <label>HRA Mission Control</label>
+            <icon type="theme">applications-system</icon>
+            <statustip>A custom plugin for HRA robot control.</statustip>
+        </qtgui>
+    </class>
+</library>

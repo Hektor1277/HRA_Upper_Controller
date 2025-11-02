@@ -7,6 +7,7 @@
 subdirs("gtest")
 subdirs("realsense-ros/realsense2_description")
 subdirs("hra_msgs")
+subdirs("hra_control_ui")
 subdirs("realsense-ros/realsense2_camera")
 subdirs("HRA_AFD_assmebly")
 subdirs("HRA_description")

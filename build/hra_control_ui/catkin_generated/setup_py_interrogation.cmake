@@ -1,0 +1,7 @@
+set(hra_control_ui_SETUP_PY_SETUP_MODULE "distutils.core")
+set(hra_control_ui_SETUP_PY_VERSION "0.0.1")
+set(hra_control_ui_SETUP_PY_SCRIPTS "")
+set(hra_control_ui_SETUP_PY_PACKAGES "hra_control_ui")
+set(hra_control_ui_SETUP_PY_PACKAGE_DIRS "src/hra_control_ui")
+set(hra_control_ui_SETUP_PY_MODULES "")
+set(hra_control_ui_SETUP_PY_MODULE_DIRS "")
