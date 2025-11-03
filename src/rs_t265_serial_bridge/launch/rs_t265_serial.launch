@@ -37,13 +37,14 @@
   <arg name="urdf_ground" default="$(find HRA_AFD_assmebly)/urdf/HRA_AFD_assmebly.urdf" doc="ground_testing 机型的 URDF 文件路径"/>
 
   <!-- 各构型对应的相机静态偏置（单位：米） -->
+  <!-- 注：此处相机偏置为相机rs_t265_link到机器人系base_link -->
   <arg name="offset_x_free_flying" default="0.1193"/>
   <arg name="offset_y_free_flying" default="0.0000"/>
   <arg name="offset_z_free_flying" default="0.07625"/>
 
   <arg name="offset_x_ground_testing" default="0.1193"/>
   <arg name="offset_y_ground_testing" default="0.0000"/>
-  <arg name="offset_z_ground_testing" default="0.36925"/>
+  <arg name="offset_z_ground_testing" default="0.07625"/>
 
   <!-- 通用偏置，根据 robot_config 选择对应构型的值 -->
   <arg name="offset_x" default="$(eval arg('offset_x_' + arg('config')))"/>
@@ -160,9 +161,9 @@
       <param name="publish_frequency" value="50.0"/>
     </node>
     <!-- 发布 rs_t265_link => base_link 的静态偏置 -->
-    <!-- 从 ground_testing.urdf 中读得 base_link => T265_Link 的偏置为 (0.1193, 0.00, 0.36925)， -->
-    <!-- 发布反向即 (-0.1193, -0.00, -0.36925) -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_base_ground" args="-0.1193  -0.00  -0.36925   0 0 0  rs_t265_link   base_link"/>
+    <!-- 从 ground_testing.urdf 中读得 base_link => T265_Link 的偏置为 (0.1193, 0.00, 0.07625)， -->
+    <!-- 发布反向即 (-0.1193, -0.00, -0.07625) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_base_ground" args="-0.1193  -0.00  -0.07625   0 0 0  rs_t265_link   base_link"/>
   </group>
   <!-- —— 启动 串口桥接节点 —— -->
   <node pkg="rs_t265_serial_bridge" type="rs_t265_serial_bridge_node" name="rs_t265_serial_bridge_node" output="screen">

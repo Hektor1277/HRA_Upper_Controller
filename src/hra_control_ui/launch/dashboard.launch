@@ -13,7 +13,6 @@
     <include file="$(find rs_t265_serial_bridge)/launch/rs_t265_serial.launch">
         <!-- 你可以在这里覆盖 rs_t265_serial.launch 中的参数，例如 -->
         <!-- <arg name="config" value="free_flying"/> -->
-        <arg name="config" value="free_flying"/>
         <!-- <arg name="mode" value="debug"/> -->
     </include>
 

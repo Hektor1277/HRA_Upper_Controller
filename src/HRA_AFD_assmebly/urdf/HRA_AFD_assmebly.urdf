@@ -6,7 +6,7 @@
   name="HRA_AFD_assmebly">
   <link
     name="base_link">
-    <!-- 将原inertial部分删除，放置于dummy -->
+    <!-- 删除：原 base_link 惯性 -->
     <visual>
       <origin
         xyz="0 0 0"
@@ -32,24 +32,25 @@
     </collision>
   </link>
   
-  <!-- 虚拟子链接，承载原 base_link 惯性 -->
+  <!-- 新增：虚拟子链接 dummy_link 承载原 base_link 惯性 -->
   <link name="dummy_link">
     <inertial>
       <origin
-        xyz="0.00022653 -0.00030111 0.12794"
+        xyz="0.001036 -0.001377 -0.012817"
         rpy="0 0 0" />
       <mass
-        value="12.684" />
+        value="3.4296" />
       <inertia
-        ixx="0.085446"
+        ixx="0.0081806"
         ixy="2.5668E-07"
         ixz="3.2733E-06"
-        iyy="0.089093"
+        iyy="0.010474"
         iyz="1.5189E-06"
-        izz="0.11267" />
+        izz="0.011973" />
     </inertial>
   </link>
-  <!-- 将 dummy_link 通过固定关节挂到 base_link 下 -->
+
+  <!-- 新增：固定关节，把 dummy_link 刚性挂载到 base_link -->
   <joint name="base_to_dummy" type="fixed">
     <parent link="base_link"/>
     <child  link="dummy_link"/>
@@ -100,7 +101,7 @@
     name="LX+_joint"
     type="fixed">
     <origin
-      xyz="0.122 0.071 0.364"
+      xyz="0.122 0.071 0.071"
       rpy="1.5708 0 1.5708" />
     <parent
       link="base_link" />
@@ -113,7 +114,7 @@
     name="LX-_Link">
     <inertial>
       <origin
-        xyz="-1.852E-10 -2.9906E-10 -0.017338"
+        xyz="-1.8519E-10 -2.9906E-10 -0.017338"
         rpy="0 0 0" />
       <mass
         value="0.039411" />
@@ -153,7 +154,7 @@
     name="LX-_joint"
     type="fixed">
     <origin
-      xyz="-0.122 0.071 0.222"
+      xyz="-0.122 0.071 -0.071"
       rpy="1.5708 0 -1.5708" />
     <parent
       link="base_link" />
@@ -206,7 +207,7 @@
     name="RX+_joint"
     type="fixed">
     <origin
-      xyz="0.122 -0.071 0.222"
+      xyz="0.122 -0.071 -0.071"
       rpy="1.5708 0 1.5708" />
     <parent
       link="base_link" />
@@ -219,7 +220,7 @@
     name="RX-_Link">
     <inertial>
       <origin
-        xyz="1.8519E-10 2.9906E-10 -0.017338"
+        xyz="1.852E-10 2.9906E-10 -0.017338"
         rpy="0 0 0" />
       <mass
         value="0.039411" />
@@ -259,7 +260,7 @@
     name="RX-_joint"
     type="fixed">
     <origin
-      xyz="-0.122 -0.071 0.364"
+      xyz="-0.122 -0.071 0.071"
       rpy="1.5708 0 -1.5708" />
     <parent
       link="base_link" />
@@ -312,7 +313,7 @@
     name="FY+_joint"
     type="fixed">
     <origin
-      xyz="0.071 0.122 0.364"
+      xyz="0.071 0.122 0.071"
       rpy="1.5708 0 3.1416" />
     <parent
       link="base_link" />
@@ -365,7 +366,7 @@
     name="FY-_joint"
     type="fixed">
     <origin
-      xyz="0.071 -0.122 0.222"
+      xyz="0.071 -0.122 -0.071"
       rpy="1.5708 0 0" />
     <parent
       link="base_link" />
@@ -418,8 +419,8 @@
     name="AY+_joint"
     type="fixed">
     <origin
-      xyz="-0.071 0.122 0.222"
-      rpy="1.5708 0 -3.1416" />
+      xyz="-0.071 0.122 -0.071"
+      rpy="1.5708 0 3.1416" />
     <parent
       link="base_link" />
     <child
@@ -431,7 +432,7 @@
     name="AY-_Link">
     <inertial>
       <origin
-        xyz="2.9906E-10 -1.8519E-10 -0.017338"
+        xyz="2.9906E-10 -1.852E-10 -0.017338"
         rpy="0 0 0" />
       <mass
         value="0.039411" />
@@ -471,7 +472,7 @@
     name="AY-_joint"
     type="fixed">
     <origin
-      xyz="-0.071 -0.122 0.364"
+      xyz="-0.071 -0.122 0.071"
       rpy="1.5708 0 0" />
     <parent
       link="base_link" />
@@ -524,7 +525,7 @@
     name="LZ+_joint"
     type="fixed">
     <origin
-      xyz="0.071 0.071 0.415"
+      xyz="0.071 0.071 0.122"
       rpy="0 0 1.5708" />
     <parent
       link="base_link" />
@@ -577,7 +578,7 @@
     name="LZ-_joint"
     type="fixed">
     <origin
-      xyz="-0.071 0.071 0.171"
+      xyz="-0.071 0.071 -0.122"
       rpy="3.1416 0 -1.5708" />
     <parent
       link="base_link" />
@@ -630,7 +631,7 @@
     name="RZ+_joint"
     type="fixed">
     <origin
-      xyz="-0.071 -0.071 0.415"
+      xyz="-0.071 -0.071 0.122"
       rpy="0 0 1.5708" />
     <parent
       link="base_link" />
@@ -683,7 +684,7 @@
     name="RZ-_joint"
     type="fixed">
     <origin
-      xyz="0.071 -0.071 0.171"
+      xyz="0.071 -0.071 -0.122"
       rpy="-3.1416 0 -1.5708" />
     <parent
       link="base_link" />
@@ -736,7 +737,7 @@
     name="T265_joint"
     type="fixed">
     <origin
-      xyz="0.1193 0 0.36925"
+      xyz="0.1193 0 0.07625"
       rpy="0 0 0" />
     <parent
       link="base_link" />
@@ -759,7 +760,7 @@
         ixz="-7.633E-11"
         iyy="3.6882E-06"
         iyz="1.473E-12"
-        izz="0.14716" />
+        izz="5.9549E-05" />
     </inertial>
     <visual>
       <origin
@@ -789,7 +790,7 @@
     name="D435i_joint"
     type="fixed">
     <origin
-      xyz="0.11555 0.0175 0.3445"
+      xyz="0.11555 0.0175 0.0515"
       rpy="0 0 0" />
     <parent
       link="base_link" />
@@ -797,5 +798,58 @@
       link="D435i_Link" />
     <axis
       xyz="0 0 0" />
+  </joint>
+  <link
+    name="AFD_Link">
+    <inertial>
+      <origin
+        xyz="-1.3925E-08 0.0845 -2.7803E-18"
+        rpy="0 0 0" />
+      <mass
+        value="9.2544" />
+      <inertia
+        ixx="0.078348"
+        ixy="5.4891E-22"
+        ixz="2.2618E-19"
+        iyy="0.1002"
+        iyz="5.0893E-13"
+        izz="0.076995" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_AFD_assmebly/meshes/AFD_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://HRA_AFD_assmebly/meshes/AFD_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="AFD_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.293"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="AFD_Link" />
+    <axis
+      xyz="0 0 1" />
   </joint>
 </robot>
