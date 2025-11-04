@@ -22,7 +22,8 @@
     rostopic echo -n1 /rs_t265/odom/sample/header/frame_id
     rostopic echo -n1 /rs_t265/imu/header/frame_id
     
-    
+    若要在终端中打印桥接节点的调试信息，则设置 debug_print 参数为 true，例：
+    roslaunch hra_control_ui dashboard.launch debug_print:=true
   -->
 
   <!-- —— 参数定义 —— -->
@@ -31,6 +32,9 @@
 
   <!-- 选择构型：free_flying 或 ground_testing -->
   <arg name="config" doc="选择构型，取值: free_flying 或 ground_testing"/>
+
+  <!-- 是否在终端中打印桥接节点的调试信息 -->
+  <arg name="debug_print" default="false"/>
 
   <!-- 指向两套 URDF 文件 -->
   <arg name="urdf_free" default="$(find HRA_description)/urdf/HRA_description.urdf" doc="free_flying 机型的 URDF 文件路径"/>
@@ -175,6 +179,7 @@
     <param name="port" value="$(arg port)"/>
     <param name="baud" value="$(arg baud)"/>
     <param name="send_rate" value="$(arg send_rate)"/>
+    <param name="debug_print" value="$(arg debug_print)"/>
 
     <!-- 传入计算初始位置补偿需要的静态偏置 -->
     <param name="offset_x" value="$(arg offset_x)"/>

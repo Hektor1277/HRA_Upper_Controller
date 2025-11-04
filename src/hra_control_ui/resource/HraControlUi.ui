@@ -6,280 +6,482 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>238</width>
-    <height>278</height>
+    <width>240</width>
+    <height>556</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_8">
+   <layout class="QGridLayout" name="gridLayout_11">
     <item row="0" column="0">
-     <widget class="QWidget" name="widget" native="true">
-      <property name="minimumSize">
-       <size>
-        <width>220</width>
-        <height>260</height>
-       </size>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_7">
-       <property name="leftMargin">
-        <number>5</number>
-       </property>
-       <property name="topMargin">
-        <number>5</number>
-       </property>
-       <property name="rightMargin">
-        <number>5</number>
-       </property>
-       <property name="bottomMargin">
-        <number>5</number>
-       </property>
-       <property name="spacing">
-        <number>5</number>
-       </property>
-       <item row="0" column="0">
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="1" column="0">
-          <widget class="QPushButton" name="pushButton_send_goal">
-           <property name="minimumSize">
-            <size>
-             <width>100</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>SEND GOAL</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0" colspan="2">
-          <layout class="QGridLayout" name="gridLayout_2">
+     <layout class="QGridLayout" name="gridLayout_7">
+      <item row="1" column="0">
+       <layout class="QGridLayout" name="gridLayout_9">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="Desired_Status">
+          <property name="title">
+           <string>Desired Status</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_8">
            <item row="0" column="0">
-            <widget class="QLabel" name="label_status">
-             <property name="minimumSize">
-              <size>
-               <width>214</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="text">
-              <string>status</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <layout class="QGridLayout" name="gridLayout">
-             <item row="3" column="1">
-              <widget class="QLineEdit" name="lineEdit_ori_r">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="1">
-              <widget class="QLineEdit" name="lineEdit_duration">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="Z_des">
-               <property name="minimumSize">
-                <size>
-                 <width>65</width>
-                 <height>20</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Z:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
+            <layout class="QGridLayout" name="gridLayout_6">
              <item row="0" column="0">
-              <widget class="QLabel" name="X_des">
+              <widget class="QLabel" name="label_desired_title_pos">
                <property name="minimumSize">
                 <size>
-                 <width>65</width>
+                 <width>0</width>
                  <height>20</height>
                 </size>
                </property>
                <property name="text">
-                <string>X:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QLineEdit" name="lineEdit_pos_y">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>20</height>
-                </size>
+                <string>pos_d:</string>
                </property>
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QLineEdit" name="lineEdit_pos_x">
+              <widget class="QLabel" name="label_desired_pos">
                <property name="minimumSize">
                 <size>
-                 <width>100</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="Duration">
-               <property name="minimumSize">
-                <size>
-                 <width>65</width>
+                 <width>0</width>
                  <height>20</height>
                 </size>
                </property>
                <property name="text">
-                <string>Duration:</string>
+                <string>NULL</string>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QLineEdit" name="lineEdit_pos_z">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="pitch_des">
-               <property name="minimumSize">
-                <size>
-                 <width>65</width>
-                 <height>20</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Pitch:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="1">
-              <widget class="QLineEdit" name="lineEdit_ori_y">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="yaw_des">
-               <property name="minimumSize">
-                <size>
-                 <width>65</width>
-                 <height>20</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Yaw:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               <property name="textFormat">
+                <enum>Qt::AutoText</enum>
                </property>
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QLabel" name="Y_des">
+              <widget class="QLabel" name="label_desired_title_vel">
                <property name="minimumSize">
                 <size>
-                 <width>65</width>
+                 <width>0</width>
                  <height>20</height>
                 </size>
                </property>
                <property name="text">
-                <string>Y:</string>
+                <string>vel_d:</string>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLabel" name="label_desired_vel">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>NULL</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLabel" name="label_elapsed_time">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>NULL</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLabel" name="label_total_time">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::NoFrame</enum>
+               </property>
+               <property name="text">
+                <string>NULL</string>
                </property>
               </widget>
              </item>
              <item row="3" column="0">
-              <widget class="QLabel" name="roll_des">
+              <widget class="QLabel" name="label_desired_title_time">
                <property name="minimumSize">
                 <size>
-                 <width>65</width>
+                 <width>0</width>
                  <height>20</height>
                 </size>
                </property>
                <property name="text">
-                <string>Roll:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                <string>time_d:</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
-              <widget class="QLineEdit" name="lineEdit_ori_p">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_desired_title_time_now">
                <property name="minimumSize">
                 <size>
-                 <width>100</width>
+                 <width>0</width>
                  <height>20</height>
                 </size>
+               </property>
+               <property name="text">
+                <string>time_e:</string>
                </property>
               </widget>
              </item>
             </layout>
            </item>
           </layout>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="pushButton_cancel_goal">
-           <property name="minimumSize">
-            <size>
-             <width>100</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>CANCEL</string>
-           </property>
-          </widget>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="Actual_Status">
+          <property name="title">
+           <string>Actual Status</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_5">
+           <item row="0" column="0">
+            <layout class="QGridLayout" name="gridLayout_4">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_actual_title_pos">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>pos:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_actual_pos">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>0</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_actual_title_vel">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>vel:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLabel" name="label_actual_vel">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>0</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_status">
+        <property name="minimumSize">
+         <size>
+          <width>214</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="text">
+         <string>status</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QWidget" name="widget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>220</width>
+          <height>260</height>
+         </size>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_10">
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <property name="spacing">
+          <number>5</number>
+         </property>
+         <item row="0" column="0">
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButton_send_goal">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>SEND GOAL</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <layout class="QGridLayout" name="gridLayout_2">
+             <item row="0" column="0">
+              <layout class="QGridLayout" name="gridLayout">
+               <item row="3" column="1">
+                <widget class="QLineEdit" name="lineEdit_ori_r">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="1">
+                <widget class="QLineEdit" name="lineEdit_duration">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="Z_des">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Z:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="X_des">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>X:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLineEdit" name="lineEdit_pos_y">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="lineEdit_pos_x">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="0">
+                <widget class="QLabel" name="Duration">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Duration:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLineEdit" name="lineEdit_pos_z">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="pitch_des">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Pitch:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="1">
+                <widget class="QLineEdit" name="lineEdit_ori_y">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0">
+                <widget class="QLabel" name="yaw_des">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Yaw:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="Y_des">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Y:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="roll_des">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Roll:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QLineEdit" name="lineEdit_ori_p">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pushButton_cancel_goal">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>CANCEL</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
-       </item>
-      </layout>
-     </widget>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

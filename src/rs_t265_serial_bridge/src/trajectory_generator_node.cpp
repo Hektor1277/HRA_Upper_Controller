@@ -278,6 +278,15 @@ public:
         point_msg.acceleration.angular.z = a[5];
 
         traj_point_pub_.publish(point_msg);
+
+        // --- 新增: 发布Action Feedback ---
+        if (as_.isActive())
+        {
+            hra_msgs::ExecuteTrajectoryFeedback feedback;
+            feedback.current_point = point_msg;
+            feedback.elapsed_time = t;
+            as_.publishFeedback(feedback);
+        }
     }
 };
 

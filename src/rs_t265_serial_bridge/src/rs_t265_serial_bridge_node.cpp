@@ -126,6 +126,7 @@ ros::Time prev_imu_time;
 
 // 串口数据帧参数
 static uint32_t g_seq = 1; // 帧序号（从 1 开始）
+bool enable_debug_print = false; // 是否启用调试打印
 
 // =============================================================
 // @brief 串口数据帧协议：帧头、帧序号、时间戳、数据帧、校验和、帧尾
@@ -580,7 +581,12 @@ void timerCallback(const ros::TimerEvent &)
   // { // 保留最新的20000个点
   //   actual_path_msg.poses.erase(actual_path_msg.poses.begin());
   // }
-  // actual_path_pub.publish(actual_path_msg);
+  static ros::Time last_path_pub_time = ros::Time::now();
+  if ((ros::Time::now() - last_path_pub_time).toSec() > 0.1)
+  { // 降低到10Hz
+    actual_path_pub.publish(actual_path_msg);
+    last_path_pub_time = ros::Time::now();
+  }
 
   // 8.2 发布用于 rqt_plot 的数据
   std_msgs::Float64 msg_f64;
@@ -770,9 +776,13 @@ void timerCallback(const ros::TimerEvent &)
   // 使用 ROS_INFO_STREAM_THROTTLE(1.0) 将打印频率限制为每秒一次。
   // 这既能让我们看到实时数据，又不会阻塞ROS日志系统，还能让终端显示清晰。
   // 同时，移除了开头的 "\r"。
-  ROS_INFO_STREAM_THROTTLE(1.0,
+  if (enable_debug_print)
+  {
+        ROS_INFO_STREAM_THROTTLE(1.0,
                            "--- Frame " << seq << " ---" << "\nFrame sent: " << frame.size() << " bytes. | Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc << "\nDesired Position: [" << desired_state.pose.position.x << ", " << desired_state.pose.position.y << ", " << desired_state.pose.position.z << "]" << "\nActual  Position: [" << pos[0] << ", " << pos[1] << ", " << pos[2] << "]" << "\nDesired Velocity: [" << desired_state.velocity.linear.x << ", " << desired_state.velocity.linear.y << ", " << desired_state.velocity.linear.z << "]" << "\nActual  Velocity: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]");
+  }
 }
+
 
 // ===========================================================
 // @brief 主函数：初始化 ROS 节点、串口、订阅器、TF2 监听、定时器
@@ -811,6 +821,7 @@ int main(int argc, char **argv)
   // send_rate 下发自 launch 的 <param name="send_rate"…>
   double send_rate;
   pnh.param<double>("send_rate", send_rate, 100.0);
+  pnh.param<bool>("debug_print", enable_debug_print, false);
 
   // —— 串口初始化 ——
   try

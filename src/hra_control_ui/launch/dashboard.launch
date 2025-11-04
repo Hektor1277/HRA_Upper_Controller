@@ -6,6 +6,8 @@
 
     <!-- ======================= 用户配置区 ======================= -->
 
+    <arg name="debug_print" default="false" doc="是否在终端中打印桥接节点的调试信息"/>
+
     <!-- 1. 选择要启动的机器人构型 -->
     <arg name="config" default="free_flying" doc="构型选择: free_flying 或 ground_testing"/>
 
