@@ -1,22 +1,46 @@
 <launch>
     <!--
-        File: dashboard.launch
-        功能: 一键启动HRA机器人所有核心节点以及集成化的RQT控制台
-
-        使用方法:
-        source devel/setup.bash
-        roslaunch hra_control_ui dashboard.launch
+        File: dashboard.launch (V2 - Multi-config & Initial Pose)
+        功能: 最终版一键启动文件，支持多构型和自定义初始位姿。
     -->
 
-    <!-- 步骤 1: 包含并启动所有机器人后端节点 -->
-    <!-- 我们复用之前的launch文件，这是一种非常好的模块化实践 -->
+    <!-- ======================= 用户配置区 ======================= -->
+
+    <!-- 1. 选择要启动的机器人构型 -->
+    <arg name="config" default="free_flying" doc="构型选择: free_flying 或 ground_testing"/>
+
+    <!-- 2. 定义机器人在世界中的初始位姿 -->
+    <arg name="initial_pose_x_free_flying" default="0.1193" />
+    <arg name="initial_pose_y_free_flying" default="0.0" />
+    <arg name="initial_pose_z_free_flying" default="0.20025" />
+
+    <arg name="initial_pose_x_ground_testing" default="0.1193" />
+    <arg name="initial_pose_y_ground_testing" default="0.0" />
+    <arg name="initial_pose_z_ground_testing" default="0.36925" />
+
+    <!-- 2.1 根据 robot_config 选择对应构型的值 -->
+    <arg name="initial_pose_x" default="$(eval arg('initial_pose_x_' + arg('config')))"/>
+    <arg name="initial_pose_y" default="$(eval arg('initial_pose_y_' + arg('config')))"/>
+    <arg name="initial_pose_z" default="$(eval arg('initial_pose_z_' + arg('config')))"/>
+
+    <arg name="initial_pose_R" default="0.0" />
+    <arg name="initial_pose_P" default="0.0" />
+    <arg name="initial_pose_Y" default="0.0" />
+
+    <!-- ======================= 系统实现区 ======================= -->
+
+    <!-- 步骤 1: 创建 'map' 坐标系并发布 'map' -> 'rs_t265_odom_frame' 的变换 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom_broadcaster" args="$(arg initial_pose_x) $(arg initial_pose_y) $(arg initial_pose_z) 
+                 $(arg initial_pose_Y) $(arg initial_pose_P) $(arg initial_pose_R) 
+                 map rs_t265_odom_frame" />
+
+    <!-- 步骤 2: 包含并启动所有机器人后端节点 -->
     <include file="$(find rs_t265_serial_bridge)/launch/rs_t265_serial.launch">
-        <!-- 你可以在这里覆盖 rs_t265_serial.launch 中的参数，例如 -->
-        <!-- <arg name="config" value="free_flying"/> -->
-        <!-- <arg name="mode" value="debug"/> -->
+        <arg name="config" value="$(arg config)"/>
     </include>
 
-    <!-- 步骤 2: 启动RQT GUI，并自动加载我们保存的仪表盘布局 -->
-    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" respawn="false" output="screen" args="--perspective-file $(find hra_control_ui)/resource/hra_dashboard.perspective"/>
+    <!-- 步骤 3: 启动 RQT GUI 并加载对应构型的 perspective 文件 -->
+
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" respawn="false" output="screen" args="--perspective-file $(find hra_control_ui)/resource/$(arg config).perspective"/>
 
 </launch>

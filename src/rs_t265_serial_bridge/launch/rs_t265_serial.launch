@@ -30,7 +30,7 @@
   <arg name="mode" default="operating" doc="选择运行模式: debug 或 operating"/>
 
   <!-- 选择构型：free_flying 或 ground_testing -->
-  <arg name="config" default="ground_testing" doc="选择构型，取值: free_flying 或 ground_testing"/>
+  <arg name="config" doc="选择构型，取值: free_flying 或 ground_testing"/>
 
   <!-- 指向两套 URDF 文件 -->
   <arg name="urdf_free" default="$(find HRA_description)/urdf/HRA_description.urdf" doc="free_flying 机型的 URDF 文件路径"/>
