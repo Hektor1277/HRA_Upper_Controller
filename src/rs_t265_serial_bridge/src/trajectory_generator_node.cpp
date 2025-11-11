@@ -94,11 +94,20 @@ protected:
     std::array<QuinticPolynomialSolver, 6> solvers_;
     ros::Time trajectory_start_time_;
     double trajectory_duration_ = 0.0;
+    std::string robot_configuration_; // 机器人当前构型"free_flying" 或 "ground_testing"
 
 public:
     TrajectoryGenerator(std::string name) : as_(nh_, name, boost::bind(&TrajectoryGenerator::executeCB, this, _1), false),
                                             action_name_(name)
     {
+        // 1. 创建一个私有节点句柄
+        ros::NodeHandle pnh("~");
+
+        // 2. 使用私有节点句柄 pnh 来读取参数
+        pnh.param<std::string>("robot_configuration", robot_configuration_, "free_flying");
+
+        ROS_INFO("TrajectoryGenerator started in '%s' mode.", robot_configuration_.c_str());
+
         odom_sub_ = nh_.subscribe("/rs_t265/odom/sample", 1, &TrajectoryGenerator::odomCB, this);
         traj_point_pub_ = nh_.advertise<hra_msgs::TrajectoryPoint>("/desired_state_topic", 10);
         desired_path_pub_ = nh_.advertise<nav_msgs::Path>("/desired_path", 1, true); // <-- 新增: true表示latched，新订阅者能收到最后一条消息
@@ -144,6 +153,19 @@ public:
 
         tf2::Quaternion q_start(start_odom.pose.pose.orientation.x, start_odom.pose.pose.orientation.y, start_odom.pose.pose.orientation.z, start_odom.pose.pose.orientation.w);
         tf2::Matrix3x3(q_start).getRPY(start_p[3], start_p[4], start_p[5]);
+
+        // --- [核心修正] 根据运行模式“拍平”起点 ---
+        if (robot_configuration_ == "ground_testing")
+        {
+            ROS_INFO("3DOF mode: Flattening trajectory start point.");
+            start_p[2] = 0.0; // Z position
+            start_p[3] = 0.0; // Roll
+            start_p[4] = 0.0; // Pitch
+
+            start_v[2] = 0.0; // Z velocity
+            start_v[3] = 0.0; // Roll rate
+            start_v[4] = 0.0; // Pitch rate
+        }
 
         // 终点状态
         double end_p[6], end_v[6] = {0}, end_a[6] = {0};

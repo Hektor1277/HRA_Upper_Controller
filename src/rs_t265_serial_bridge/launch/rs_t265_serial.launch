@@ -10,8 +10,11 @@
     roslaunch rs_t265_serial_bridge rs_t265_serial.launch config:=ground_testing  //以地面验证模式启动
     roslaunch rs_t265_serial_bridge rs_t265_serial.launch config:=free_flying     //以自由飞行（机器人本体）模式启动
 
-    若要以调试模式启动，则设置 config 参数为 debug，例：：
-    roslaunch rs_t265_serial_bridge rs_t265_serial.launch mode:=debug config:=free_flying
+    若要以调试模式启动，则设置 mode 参数为 debug，例：：
+    roslaunch rs_t265_serial_bridge rs_t265_serial.launch mode:=debug
+
+    若要在终端中打印桥接节点的调试信息，则设置 debug_print 参数为 true，例：
+    roslaunch hra_control_ui dashboard.launch debug_print:=true
     
     验证TF树：
     rosrun tf2_tools view_frames.py  //绘制TF树，并生成PDF
@@ -22,8 +25,6 @@
     rostopic echo -n1 /rs_t265/odom/sample/header/frame_id
     rostopic echo -n1 /rs_t265/imu/header/frame_id
     
-    若要在终端中打印桥接节点的调试信息，则设置 debug_print 参数为 true，例：
-    roslaunch hra_control_ui dashboard.launch debug_print:=true
   -->
 
   <!-- —— 参数定义 —— -->
@@ -31,7 +32,7 @@
   <arg name="mode" default="operating" doc="选择运行模式: debug 或 operating"/>
 
   <!-- 选择构型：free_flying 或 ground_testing -->
-  <arg name="config" doc="选择构型，取值: free_flying 或 ground_testing"/>
+  <arg name="config" doc="构型选择: free_flying(6dof (仿真/飞行)) 或 ground_testing(3dof (地面实验))"/>
 
   <!-- 是否在终端中打印桥接节点的调试信息 -->
   <arg name="debug_print" default="false"/>
@@ -188,6 +189,9 @@
   </node>
 
   <!-- 启动新的轨迹生成器节点 -->
-  <node pkg="rs_t265_serial_bridge" type="trajectory_generator_node" name="trajectory_generator" output="screen" />
+  <node pkg="rs_t265_serial_bridge" type="trajectory_generator_node" name="trajectory_generator" output="screen">
+    <param name="robot_configuration" value="$(arg config)"/>
+  </node>
+
 
 </launch>

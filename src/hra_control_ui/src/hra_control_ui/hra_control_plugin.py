@@ -74,9 +74,26 @@ class HraControlPlugin(Plugin):
                 else:
                     self._widget.label_status.setText('Status: Action Server NOT FOUND.')
                     self._widget.pushButton_send_goal.setEnabled(False)
+                    self.operating_mode = rospy.get_param('/trajectory_generator/operating_mode', 'free_flying')
+                    self.update_ui_for_mode()
         except Exception as e:
              self._widget.label_status.setText('Status: ROS Init Error!')
              rospy.logerr("HRA Control UI: Error initializing action client: %s" % str(e))
+
+    def update_ui_for_mode(self):
+        """ 根据运行模式启用或禁用UI控件 """
+        is_3dof = (self.operating_mode == 'ground_testing')
+        
+        self._widget.lineEdit_pos_z.setEnabled(not is_3dof)
+        self._widget.lineEdit_ori_r.setEnabled(not is_3dof)
+        self._widget.lineEdit_ori_p.setEnabled(not is_3dof)
+        
+        if is_3dof:
+            self._widget.lineEdit_pos_z.setText("0.0")
+            self._widget.lineEdit_ori_r.setText("0.0")
+            self._widget.lineEdit_ori_p.setText("0.0")
+            # 可以在这里改变标签颜色或添加提示
+            self._widget.label_status.setText('Status: ground_testing Mode. Ready.')
 
     # --- 更新UI ---
     def desired_state_callback(self, msg):
