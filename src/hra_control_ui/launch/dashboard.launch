@@ -1,6 +1,6 @@
 <launch>
     <!--
-        File: dashboard.launch (V2 - Multi-config & Initial Pose)
+        File: dashboard.launch
         功能: 最终版一键启动文件，支持多构型和自定义初始位姿。
     -->
 
@@ -8,8 +8,12 @@
 
     <arg name="debug_print" default="false" doc="是否在终端中打印桥接节点的调试信息"/>
 
-    <!-- 1. 选择要启动的机器人构型 -->
+    <!-- 选择要启动的机器人构型 -->
     <arg name="config" default="free_flying" doc="构型选择: free_flying(6dof (仿真/飞行)) 或 ground_testing(3dof (地面实验))"/>
+
+    <!-- 系统运行频率 -->
+    <arg name="frequency" default="100.0" doc="系统运行频率 [Hz]"/>
+
 
     <arg name="mode" default="operating" doc="构型选择: operating 或 debug"/>
 
@@ -43,6 +47,8 @@
     <include file="$(find rs_t265_serial_bridge)/launch/rs_t265_serial.launch">
         <arg name="config" value="$(arg config)"/>
         <arg name="mode" value="$(arg mode)"/>
+        <arg name="frequency" value="$(arg frequency)"/>
+        <arg name="debug_print" value="$(arg debug_print)"/>
     </include>
 
     <!-- 步骤 3: 启动 RQT GUI 并加载对应构型的 perspective 文件 -->

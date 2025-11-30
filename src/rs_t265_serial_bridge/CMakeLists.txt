@@ -183,6 +183,8 @@ include_directories(
 ## Add cmake target dependencies of the executable
 ## same as for the library above
   add_dependencies(rs_t265_serial_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+  add_dependencies(trajectory_generator_node hra_msgs_generate_messages_cpp)
+  add_dependencies(rs_t265_serial_bridge_node hra_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(rs_t265_serial_bridge_node

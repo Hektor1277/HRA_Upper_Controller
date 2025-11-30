@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/hra/catkin_ws/devel/lib/rs_t265_serial_bridge/rs_t265_serial_bridge_node"
-  "/home/hra/catkin_ws/devel/lib/rs_t265_serial_bridge/rs_t265_serial_bridge_node.pdb"
+  "../devel/lib/rs_t265_serial_bridge/rs_t265_serial_bridge_node"
+  "../devel/lib/rs_t265_serial_bridge/rs_t265_serial_bridge_node.pdb"
   "CMakeFiles/rs_t265_serial_bridge_node.dir/src/rs_t265_serial_bridge_node.cpp.o"
 )
 

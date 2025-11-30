@@ -3952,7 +3952,7 @@ realsense-ros/realsense2_camera/CMakeFiles/realsense2_camera_genpy.dir/clean:
 # Target rules for target rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir
 
 # All Build rule for target.
-rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/all:
+rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/all: hra_msgs/CMakeFiles/hra_msgs_generate_messages_cpp.dir/all
 	$(MAKE) -f rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/build.make rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/depend
 	$(MAKE) -f rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/build.make rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=71,72 "Built target trajectory_generator_node"
@@ -3960,7 +3960,7 @@ rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/all:
 
 # Build rule for subdir invocation for target.
 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/hra/catkin_ws/build/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/hra/catkin_ws/build/CMakeFiles 10
 	$(MAKE) -f CMakeFiles/Makefile2 rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/hra/catkin_ws/build/CMakeFiles 0
 .PHONY : rs_t265_serial_bridge/CMakeFiles/trajectory_generator_node.dir/rule

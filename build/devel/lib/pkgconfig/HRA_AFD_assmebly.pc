@@ -1,0 +1,8 @@
+prefix=/home/hra/catkin_ws/build/devel
+
+Name: HRA_AFD_assmebly
+Description: Description of HRA_AFD_assmebly
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -1,6 +1,6 @@
 set(_CATKIN_CURRENT_PACKAGE "hra_control_ui")
 set(hra_control_ui_VERSION "0.0.1")
-set(hra_control_ui_MAINTAINER "hra <hra@todo.todo>")
+set(hra_control_ui_MAINTAINER "hektorsun <hektorsun@stu.hit.edu.cn>")
 set(hra_control_ui_PACKAGE_FORMAT "2")
 set(hra_control_ui_BUILD_DEPENDS "rospy" "rqt_gui" "rqt_gui_py" "actionlib" "hra_msgs")
 set(hra_control_ui_BUILD_EXPORT_DEPENDS "rospy" "rqt_gui" "rqt_gui_py" "actionlib" "hra_msgs")

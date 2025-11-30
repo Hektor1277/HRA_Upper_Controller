@@ -1,4 +1,4 @@
-prefix=/home/hra/catkin_ws/install
+prefix=/usr/local
 
 Name: hra_control_ui
 Description: Description of hra_control_ui

@@ -27,9 +27,21 @@
     
   -->
 
-  <!-- —— 参数定义 —— -->
-  <!-- 选择运行模式：debug 或 operating -->
+<!-- —— 参数定义 —— -->
+<!-- 
+       mode: 
+         - "operating": 正常模式，持续向下位机发送控制帧（即使没有新指令也会发送悬停/保持帧）。
+         - "debug":     静默调试模式，仅处理传感器数据和可视化。只有当用户通过Dashboard发送指令时，才通过串口发送数据帧。
+  -->
   <arg name="mode" default="operating" doc="选择运行模式: debug 或 operating"/>
+
+  <!-- 
+       frequency: 
+         - 系统的主循环频率 (Hz)，决定了串口发送频率和轨迹采样频率。
+         - 默认 100Hz。
+  -->
+  <arg name="frequency" default="100.0" doc="系统运行频率 [Hz]"/>
+
 
   <!-- 选择构型：free_flying 或 ground_testing -->
   <arg name="config" doc="构型选择: free_flying(6dof (仿真/飞行)) 或 ground_testing(3dof (地面实验))"/>
@@ -67,7 +79,8 @@
   <arg name="json_file_path" default=""/>
   <arg name="camera" default="rs_t265"/>
   <arg name="tf_prefix" default="$(arg camera)"/>
-  <arg name="initial_reset" default="true"/>
+  //已通过硬件相机重置，此处设为 false
+  <arg name="initial_reset" default="false"/>
 
   <arg name="fisheye_width" default="848"/>
   <arg name="fisheye_height" default="800"/>
@@ -129,8 +142,6 @@
   <!-- —— THS0:8 TX, 10 RX —— -->
   <arg name="port" default="/dev/ttyTHS0"/>
   <arg name="baud" default="230400"/>
-  <!-- 根据 mode 自动给出默认频率 -->
-  <arg name="send_rate" default="$(eval '100' if arg('mode') == 'operating' else '0.2')" doc="serial frame rate [Hz]" />
 
   <!-- 上位机虚拟串口测试节点，用于监听测试节点发送数据帧 -->
   <!-- rs_t265_serial_bridge_monitor.launch 片段 -->
@@ -148,7 +159,7 @@
     <!-- 加载 free_flying.urdf 到 /robot_description 参数里 -->
     <param name="robot_description" command="cat $(arg urdf_free)"/>
     <!-- 启动 robot_state_publisher，内部会把 base_link => T265_Link 等所有静态关节关系发布出来 -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="log">
       <param name="publish_frequency" value="50.0"/>
     </node>
     <!-- 发布 rs_t265_link => base_link 的静态偏置 -->
@@ -162,7 +173,7 @@
     <!-- 加载 ground_testing.urdf -->
     <param name="robot_description" command="cat $(arg urdf_ground)"/>
     <!-- 启动 robot_state_publisher -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="log">
       <param name="publish_frequency" value="50.0"/>
     </node>
     <!-- 发布 rs_t265_link => base_link 的静态偏置 -->
@@ -179,7 +190,8 @@
     <param name="pose" value="$(arg tf_prefix)_pose_frame"/>
     <param name="port" value="$(arg port)"/>
     <param name="baud" value="$(arg baud)"/>
-    <param name="send_rate" value="$(arg send_rate)"/>
+    <param name="mode" value="$(arg mode)"/>
+    <param name="frequency" value="$(arg frequency)"/>
     <param name="debug_print" value="$(arg debug_print)"/>
 
     <!-- 传入计算初始位置补偿需要的静态偏置 -->
@@ -192,6 +204,4 @@
   <node pkg="rs_t265_serial_bridge" type="trajectory_generator_node" name="trajectory_generator" output="screen">
     <param name="robot_configuration" value="$(arg config)"/>
   </node>
-
-
 </launch>

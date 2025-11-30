@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/hra/catkin_ws/devel/include/realsense2_camera/Extrinsics.h"
-  "/home/hra/catkin_ws/devel/include/realsense2_camera/IMUInfo.h"
+  "../../devel/include/realsense2_camera/Extrinsics.h"
+  "../../devel/include/realsense2_camera/IMUInfo.h"
   "CMakeFiles/realsense2_camera_generate_messages_cpp"
 )
 

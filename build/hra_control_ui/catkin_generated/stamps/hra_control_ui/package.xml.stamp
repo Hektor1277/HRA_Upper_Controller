@@ -4,7 +4,7 @@
   <version>0.0.1</version>
   <description>The HRA Mission Control UI plugin</description>
 
-  <maintainer email="hra@todo.todo">hra</maintainer>
+  <maintainer email="hektorsun@stu.hit.edu.cn">hektorsun</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>

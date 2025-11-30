@@ -1,4 +1,4 @@
-prefix=/home/hra/catkin_ws/install
+prefix=/usr/local
 
 Name: rs_t265_serial_bridge
 Description: Description of rs_t265_serial_bridge

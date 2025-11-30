@@ -1,6 +1,6 @@
 set(_CATKIN_CURRENT_PACKAGE "HRA_description")
 set(HRA_description_VERSION "1.0.0")
-set(HRA_description_MAINTAINER " <TODO@email.com>")
+set(HRA_description_MAINTAINER " <hektorsun@stu.hit.edu.cn>")
 set(HRA_description_PACKAGE_FORMAT "2")
 set(HRA_description_BUILD_DEPENDS "roslaunch" "robot_state_publisher" "rviz" "joint_state_publisher_gui" "gazebo")
 set(HRA_description_BUILD_EXPORT_DEPENDS "roslaunch" "robot_state_publisher" "rviz" "joint_state_publisher_gui" "gazebo")

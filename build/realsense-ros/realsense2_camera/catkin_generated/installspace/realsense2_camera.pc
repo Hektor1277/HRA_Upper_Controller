@@ -1,4 +1,4 @@
-prefix=/home/hra/catkin_ws/install
+prefix=/usr/local
 
 Name: realsense2_camera
 Description: Description of realsense2_camera

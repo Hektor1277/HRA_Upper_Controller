@@ -1,6 +1,6 @@
 set(_CATKIN_CURRENT_PACKAGE "hra_msgs")
 set(hra_msgs_VERSION "0.0.1")
-set(hra_msgs_MAINTAINER "hra <hektorsun@stu.hit.edu.cn>")
+set(hra_msgs_MAINTAINER "hektorsun <hektorsun@stu.hit.edu.cn>")
 set(hra_msgs_PACKAGE_FORMAT "2")
 set(hra_msgs_BUILD_DEPENDS "actionlib_msgs" "geometry_msgs" "roscpp" "std_msgs" "message_generation" "message_runtime")
 set(hra_msgs_BUILD_EXPORT_DEPENDS "actionlib_msgs" "geometry_msgs" "roscpp" "std_msgs" "message_generation" "message_runtime")

@@ -7,7 +7,10 @@
 # new environment variables
 
 # modified environment variables
-export LD_LIBRARY_PATH='/opt/ros/noetic/lib'
-export PKG_CONFIG_PATH='/opt/ros/noetic/lib/pkgconfig'
+export CMAKE_PREFIX_PATH='/home/hra/catkin_ws/build/devel:/opt/ros/noetic'
+export LD_LIBRARY_PATH='/home/hra/catkin_ws/build/devel/lib:/opt/ros/noetic/lib'
+export PATH='/opt/ros/noetic/bin:/home/hra/.local/bin:/home/hra/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'
+export PKG_CONFIG_PATH='/home/hra/catkin_ws/build/devel/lib/pkgconfig:/opt/ros/noetic/lib/pkgconfig'
 export PWD='/home/hra/catkin_ws/build'
-export PYTHONPATH='/opt/ros/noetic/lib/python3/dist-packages'
+export PYTHONPATH='/home/hra/catkin_ws/build/devel/lib/python3/dist-packages:/opt/ros/noetic/lib/python3/dist-packages'
+export ROSLISP_PACKAGE_DIRECTORIES='/home/hra/catkin_ws/build/devel/share/common-lisp'

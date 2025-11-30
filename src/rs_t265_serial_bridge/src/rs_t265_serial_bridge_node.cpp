@@ -57,6 +57,10 @@
 // ===========================
 #define CRC_DEBUG_ENABLED 0 // 设置为1启用CRC调试信息，设置为0关闭
 
+// 运行模式控制
+std::string g_run_mode = "operating";
+double g_frequency = 100.0;
+
 // 串口对象
 serial::Serial ser;
 
@@ -91,6 +95,7 @@ hra_msgs::TrajectoryPoint latest_desired_state;
 std::mutex desired_state_mutex;
 bool desired_state_received = false;
 ros::Time last_desired_state_time;
+bool g_debug_msg_consumed = true; // 标记消息是否已被处理
 
 // 可视化相关的全局变量
 ros::Publisher actual_path_pub;
@@ -209,6 +214,9 @@ void desiredStateCallback(const hra_msgs::TrajectoryPoint::ConstPtr &msg)
   latest_desired_state = *msg;
   desired_state_received = true;
   last_desired_state_time = ros::Time::now();
+
+  // 收到新消息，标记为“未消费”
+  g_debug_msg_consumed = false;
 }
 
 // ==================================================================
@@ -297,7 +305,7 @@ void timerCallback(const ros::TimerEvent &)
     tf_odom_base = tf_buffer_ptr->lookupTransform(
         odom,      // 目标 (world)
         base_link, // 源   (robot)
-        odom_msg.header.stamp,
+        ros::Time(0),
         ros::Duration(0.01));
   }
   catch (const tf2::TransformException &ex)
@@ -342,7 +350,7 @@ void timerCallback(const ros::TimerEvent &)
     tf_odom_pose = tf_buffer_ptr->lookupTransform(
         odom,
         pose,
-        odom_msg.header.stamp,
+        ros::Time(0),
         ros::Duration(0.01));
   }
   catch (const tf2::TransformException &ex)
@@ -682,33 +690,64 @@ void timerCallback(const ros::TimerEvent &)
   msg_f64.data = ang_acc[2];
   plot_ang_acc_z_act_pub.publish(msg_f64);
 
-  // 8. 构建完整帧：帧头(0xAA,0xBB)、帧序号、时间戳、数据、校验、帧尾(0xCC,0xDD)
-  std::vector<uint8_t> frame;
-  frame.reserve(90); // 2+4+8+72+2+2
+  // -------------------------------------------------------------
+  // 模式控制逻辑：决定是否通过串口发送
+  // -------------------------------------------------------------
+  bool should_send_serial = true;
 
-  // 8.1 帧头 (2字节)
-  frame.push_back(0xAA);
-  frame.push_back(0xBB);
-
-  // 7.2 数据帧序号（4B, BE）
-  uint32_t seq = g_seq++;
-  for (int i = 3; i >= 0; --i)
-    frame.push_back(static_cast<uint8_t>((seq >> (8 * i)) & 0xFF));
-
-  // 7.3 时间戳（8B, BE）
-  uint64_t t_ns = static_cast<uint64_t>(ros::Time::now().toNSec());
-  for (int i = 7; i >= 0; --i)
-    frame.push_back(static_cast<uint8_t>((t_ns >> (8 * i)) & 0xFF));
-
-  // 7.4 payload (72 B, int16×36, BE)
-  for (int16_t val : all_data)
+  if (g_run_mode == "debug")
   {
-    frame.push_back((val >> 8) & 0xFF);
-    frame.push_back(val & 0xFF);
-  }
+    // 调试模式下：只有当收到"新鲜"且"未消费"的控制指令时才发送
+    bool is_command_valid = false;
+    {
+      std::lock_guard<std::mutex> lock(desired_state_mutex);
 
-  // ---------- 计算 CRC16 大端校验和 ----------
-  uint16_t crc = 0;
+      // 判定标准：有数据 + 数据新鲜(<0.5s) + 尚未发送过
+      if (desired_state_received &&
+          !g_debug_msg_consumed &&
+          (ros::Time::now() - last_desired_state_time).toSec() < 0.5)
+      {
+        is_command_valid = true;
+        g_debug_msg_consumed = true; // [关键] 立即标记为已消费，防止下一帧继续发
+      }
+    }
+
+    if (!is_command_valid)
+    {
+      should_send_serial = false; // 拦截发送
+    }
+  }
+  // operating 模式下 should_send_serial 默认为 true，持续发送
+
+  if (should_send_serial)
+  {
+    // 9. 构建完整帧：帧头(0xAA,0xBB)、帧序号、时间戳、数据、校验、帧尾(0xCC,0xDD)
+    std::vector<uint8_t> frame;
+    frame.reserve(90); // 2+4+8+72+2+2
+
+    // 9.1 帧头 (2字节)
+    frame.push_back(0xAA);
+    frame.push_back(0xBB);
+
+    // 9.2 数据帧序号（4B, BE）
+    uint32_t seq = g_seq++;
+    for (int i = 3; i >= 0; --i)
+      frame.push_back(static_cast<uint8_t>((seq >> (8 * i)) & 0xFF));
+
+    // 9.3 时间戳（8B, BE）
+    uint64_t t_ns = static_cast<uint64_t>(ros::Time::now().toNSec());
+    for (int i = 7; i >= 0; --i)
+      frame.push_back(static_cast<uint8_t>((t_ns >> (8 * i)) & 0xFF));
+
+    // 9.4 payload (72 B, int16×36, BE)
+    for (int16_t val : all_data)
+    {
+      frame.push_back((val >> 8) & 0xFF);
+      frame.push_back(val & 0xFF);
+    }
+
+    // ---------- 计算 CRC16 大端校验和 ----------
+    uint16_t crc = 0;
 #if CRC_DEBUG_ENABLED
   ROS_INFO_STREAM("=== Upper CRC Debug ===");
   ROS_INFO_STREAM("Frame size before CRC: " << frame.size());
@@ -746,43 +785,42 @@ void timerCallback(const ros::TimerEvent &)
   }
   #endif
 
-  // 重新完整计算CRC（确保一致性）
-  crc = 0;
-  for (size_t i = 14; i < 86; i += 2)
-  {
-    crc += (static_cast<uint16_t>(frame[i]) << 8) | static_cast<uint16_t>(frame[i + 1]);
-  }
+    // 重新完整计算CRC（确保一致性）
+    crc = 0;
+    for (size_t i = 14; i < 86; i += 2)
+    {
+      crc += (static_cast<uint16_t>(frame[i]) << 8) | static_cast<uint16_t>(frame[i + 1]);
+    }
 
-  // ROS_INFO_STREAM("Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc);
+    // ROS_INFO_STREAM("Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc);
 
-  // 7.5 CRC16校验和 (2 B, BE)
-  frame.push_back((crc >> 8) & 0xFF);
-  frame.push_back(crc & 0xFF);
+    // 9.5 CRC16校验和 (2 B, BE)
+    frame.push_back((crc >> 8) & 0xFF);
+    frame.push_back(crc & 0xFF);
 
-  // 7.6 帧尾 (2字节)
-  frame.push_back(0xCC);
-  frame.push_back(0xDD);
+    // 9.6 帧尾 (2字节)
+    frame.push_back(0xCC);
+    frame.push_back(0xDD);
 
-  // —— 8. 串口发送 ——
-  ser.write(frame);
+    // —— 10. 串口发送 ——
+    ser.write(frame);
 
-  // —— 9. ROS端调试信息 ——
+    // —— 11. ROS端调试信息 ——
 #if CRC_DEBUG_ENABLED
   for (size_t i = 0; i < frame.size(); ++i)
   {
     ROS_INFO_STREAM("frame[" << i << "]: " << std::hex << (int)frame[i]);
   }
 #endif
-  // 使用 ROS_INFO_STREAM_THROTTLE(1.0) 将打印频率限制为每秒一次。
-  // 这既能让我们看到实时数据，又不会阻塞ROS日志系统，还能让终端显示清晰。
-  // 同时，移除了开头的 "\r"。
-  if (enable_debug_print)
-  {
-        ROS_INFO_STREAM_THROTTLE(1.0,
-                           "--- Frame " << seq << " ---" << "\nFrame sent: " << frame.size() << " bytes. | Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc << "\nDesired Position: [" << desired_state.pose.position.x << ", " << desired_state.pose.position.y << ", " << desired_state.pose.position.z << "]" << "\nActual  Position: [" << pos[0] << ", " << pos[1] << ", " << pos[2] << "]" << "\nDesired Velocity: [" << desired_state.velocity.linear.x << ", " << desired_state.velocity.linear.y << ", " << desired_state.velocity.linear.z << "]" << "\nActual  Velocity: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]");
+    // 使用 ROS_INFO_STREAM_THROTTLE(5.0) 将打印频率限制为每秒一次。
+    // 这既能让我们看到实时数据，又不会阻塞ROS日志系统，还能让终端显示清晰。
+    // 同时，移除了开头的 "\r"。
+    if (enable_debug_print)
+    {
+          ROS_INFO_STREAM_THROTTLE(5.0, "--- Frame " << seq << " ---" << "\nFrame sent: " << frame.size() << " bytes. | Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc << "\nDesired Position: [" << desired_state.pose.position.x << ", " << desired_state.pose.position.y << ", " << desired_state.pose.position.z << "]" << "\nActual  Position: [" << pos[0] << ", " << pos[1] << ", " << pos[2] << "]" << "\nDesired Velocity: [" << desired_state.velocity.linear.x << ", " << desired_state.velocity.linear.y << ", " << desired_state.velocity.linear.z << "]" << "\nActual  Velocity: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]");
+    }
   }
-}
-
+} // End of timerCallback
 
 // ===========================================================
 // @brief 主函数：初始化 ROS 节点、串口、订阅器、TF2 监听、定时器
@@ -796,6 +834,12 @@ int main(int argc, char **argv)
   ros::NodeHandle pnh("~"); // **MODIFIED**：私有命名空间，对应 <node> 下的 <param>，用于读取私有参数
 
   // —— 读取参数 ——
+  // 读取 mode 和 frequency
+  pnh.param<std::string>("mode", g_run_mode, "operating");
+  pnh.param<double>("frequency", g_frequency, 100.0);
+
+  ROS_INFO("Bridge Node Started. Mode: %s, Frequency: %.1f Hz", g_run_mode.c_str(), g_frequency);
+
   // 里程计&IMU订阅话题
   pnh.param<std::string>("odom_topic", odom_topic, "/rs_t265/odom/sample");
   pnh.param<std::string>("imu_topic", imu_topic, "/rs_t265/imu");
@@ -818,9 +862,6 @@ int main(int argc, char **argv)
   int baud;
   pnh.param<int>("baud", baud, 230400);
 
-  // send_rate 下发自 launch 的 <param name="send_rate"…>
-  double send_rate;
-  pnh.param<double>("send_rate", send_rate, 100.0);
   pnh.param<bool>("debug_print", enable_debug_print, false);
 
   // —— 串口初始化 ——
@@ -902,8 +943,8 @@ int main(int argc, char **argv)
   // —— 期望状态订阅器 ——
   ros::Subscriber desired_state_sub = nh.subscribe("/desired_state_topic", 1, desiredStateCallback);
 
-  // —— 定时器：使用 send_rate 而非硬编码 ——
-  ros::Timer timer = nh.createTimer(ros::Duration(1.0 / send_rate), timerCallback);
+  // 定时器使用 g_frequency
+  ros::Timer timer = nh.createTimer(ros::Duration(1.0 / g_frequency), timerCallback);
 
   // —— 进入循环 ——
   ros::spin();

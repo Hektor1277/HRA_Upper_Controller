@@ -1,0 +1,8 @@
+prefix=/home/hra/catkin_ws/build/devel
+
+Name: hra_control_ui
+Description: Description of hra_control_ui
+Version: 0.0.1
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

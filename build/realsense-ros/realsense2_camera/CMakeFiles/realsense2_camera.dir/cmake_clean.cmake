@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/hra/catkin_ws/devel/lib/librealsense2_camera.pdb"
-  "/home/hra/catkin_ws/devel/lib/librealsense2_camera.so"
+  "../../devel/lib/librealsense2_camera.pdb"
+  "../../devel/lib/librealsense2_camera.so"
   "CMakeFiles/realsense2_camera.dir/src/base_realsense_node.cpp.o"
   "CMakeFiles/realsense2_camera.dir/src/realsense_node_factory.cpp.o"
   "CMakeFiles/realsense2_camera.dir/src/t265_realsense_node.cpp.o"
