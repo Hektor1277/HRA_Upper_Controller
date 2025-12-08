@@ -65,11 +65,11 @@ hra_msgs/CMakeFiles/hra_msgs_generate_messages_cpp: devel/include/hra_msgs/Execu
 
 devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/lib/gencpp/gen_cpp.py
 devel/include/hra_msgs/TrajectoryPoint.h: /home/hra/catkin_ws/src/hra_msgs/msg/TrajectoryPoint.msg
-devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
+devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
 devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Quaternion.msg
 devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
+devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
 devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
-devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
 devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/geometry_msgs/msg/Vector3.msg
 devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Generating C++ code from hra_msgs/TrajectoryPoint.msg"
@@ -77,22 +77,22 @@ devel/include/hra_msgs/TrajectoryPoint.h: /opt/ros/noetic/share/gencpp/msg.h.tem
 
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/lib/gencpp/gen_cpp.py
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryAction.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryResult.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionResult.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalStatus.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionGoal.msg
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Quaternion.msg
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionFeedback.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryGoal.msg
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/std_msgs/msg/Header.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionGoal.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryFeedback.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalStatus.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryResult.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionFeedback.msg
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /home/hra/catkin_ws/src/hra_msgs/msg/TrajectoryPoint.msg
-devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionResult.msg
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/geometry_msgs/msg/Vector3.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryFeedback.msg
+devel/include/hra_msgs/ExecuteTrajectoryAction.h: devel/share/hra_msgs/msg/ExecuteTrajectoryGoal.msg
 devel/include/hra_msgs/ExecuteTrajectoryAction.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Generating C++ code from hra_msgs/ExecuteTrajectoryAction.msg"
 	cd /home/hra/catkin_ws/src/hra_msgs && /home/hra/catkin_ws/build/catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py /home/hra/catkin_ws/build/devel/share/hra_msgs/msg/ExecuteTrajectoryAction.msg -Ihra_msgs:/home/hra/catkin_ws/src/hra_msgs/msg -Ihra_msgs:/home/hra/catkin_ws/build/devel/share/hra_msgs/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -Igeometry_msgs:/opt/ros/noetic/share/geometry_msgs/cmake/../msg -Iactionlib_msgs:/opt/ros/noetic/share/actionlib_msgs/cmake/../msg -p hra_msgs -o /home/hra/catkin_ws/build/devel/include/hra_msgs -e /opt/ros/noetic/share/gencpp/cmake/..
@@ -101,46 +101,46 @@ devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/lib/gencpp
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionGoal.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Quaternion.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: devel/share/hra_msgs/msg/ExecuteTrajectoryGoal.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/share/std_msgs/msg/Header.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: devel/share/hra_msgs/msg/ExecuteTrajectoryGoal.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionGoal.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Generating C++ code from hra_msgs/ExecuteTrajectoryActionGoal.msg"
 	cd /home/hra/catkin_ws/src/hra_msgs && /home/hra/catkin_ws/build/catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py /home/hra/catkin_ws/build/devel/share/hra_msgs/msg/ExecuteTrajectoryActionGoal.msg -Ihra_msgs:/home/hra/catkin_ws/src/hra_msgs/msg -Ihra_msgs:/home/hra/catkin_ws/build/devel/share/hra_msgs/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -Igeometry_msgs:/opt/ros/noetic/share/geometry_msgs/cmake/../msg -Iactionlib_msgs:/opt/ros/noetic/share/actionlib_msgs/cmake/../msg -p hra_msgs -o /home/hra/catkin_ws/build/devel/include/hra_msgs -e /opt/ros/noetic/share/gencpp/cmake/..
 
 devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/lib/gencpp/gen_cpp.py
 devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionResult.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: devel/share/hra_msgs/msg/ExecuteTrajectoryResult.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalStatus.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/share/std_msgs/msg/Header.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalStatus.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: devel/share/hra_msgs/msg/ExecuteTrajectoryResult.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionResult.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Generating C++ code from hra_msgs/ExecuteTrajectoryActionResult.msg"
 	cd /home/hra/catkin_ws/src/hra_msgs && /home/hra/catkin_ws/build/catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py /home/hra/catkin_ws/build/devel/share/hra_msgs/msg/ExecuteTrajectoryActionResult.msg -Ihra_msgs:/home/hra/catkin_ws/src/hra_msgs/msg -Ihra_msgs:/home/hra/catkin_ws/build/devel/share/hra_msgs/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -Igeometry_msgs:/opt/ros/noetic/share/geometry_msgs/cmake/../msg -Iactionlib_msgs:/opt/ros/noetic/share/actionlib_msgs/cmake/../msg -p hra_msgs -o /home/hra/catkin_ws/build/devel/include/hra_msgs -e /opt/ros/noetic/share/gencpp/cmake/..
 
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/lib/gencpp/gen_cpp.py
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: devel/share/hra_msgs/msg/ExecuteTrajectoryActionFeedback.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalStatus.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Quaternion.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: devel/share/hra_msgs/msg/ExecuteTrajectoryFeedback.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/std_msgs/msg/Header.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalStatus.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /home/hra/catkin_ws/src/hra_msgs/msg/TrajectoryPoint.msg
-devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Vector3.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/actionlib_msgs/msg/GoalID.msg
+devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: devel/share/hra_msgs/msg/ExecuteTrajectoryFeedback.msg
 devel/include/hra_msgs/ExecuteTrajectoryActionFeedback.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Generating C++ code from hra_msgs/ExecuteTrajectoryActionFeedback.msg"
 	cd /home/hra/catkin_ws/src/hra_msgs && /home/hra/catkin_ws/build/catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py /home/hra/catkin_ws/build/devel/share/hra_msgs/msg/ExecuteTrajectoryActionFeedback.msg -Ihra_msgs:/home/hra/catkin_ws/src/hra_msgs/msg -Ihra_msgs:/home/hra/catkin_ws/build/devel/share/hra_msgs/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -Igeometry_msgs:/opt/ros/noetic/share/geometry_msgs/cmake/../msg -Iactionlib_msgs:/opt/ros/noetic/share/actionlib_msgs/cmake/../msg -p hra_msgs -o /home/hra/catkin_ws/build/devel/include/hra_msgs -e /opt/ros/noetic/share/gencpp/cmake/..
 
 devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/lib/gencpp/gen_cpp.py
 devel/include/hra_msgs/ExecuteTrajectoryGoal.h: devel/share/hra_msgs/msg/ExecuteTrajectoryGoal.msg
-devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
-devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
 devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Quaternion.msg
+devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
+devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
 devel/include/hra_msgs/ExecuteTrajectoryGoal.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Generating C++ code from hra_msgs/ExecuteTrajectoryGoal.msg"
 	cd /home/hra/catkin_ws/src/hra_msgs && /home/hra/catkin_ws/build/catkin_generated/env_cached.sh /usr/bin/python3 /opt/ros/noetic/share/gencpp/cmake/../../../lib/gencpp/gen_cpp.py /home/hra/catkin_ws/build/devel/share/hra_msgs/msg/ExecuteTrajectoryGoal.msg -Ihra_msgs:/home/hra/catkin_ws/src/hra_msgs/msg -Ihra_msgs:/home/hra/catkin_ws/build/devel/share/hra_msgs/msg -Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg -Igeometry_msgs:/opt/ros/noetic/share/geometry_msgs/cmake/../msg -Iactionlib_msgs:/opt/ros/noetic/share/actionlib_msgs/cmake/../msg -p hra_msgs -o /home/hra/catkin_ws/build/devel/include/hra_msgs -e /opt/ros/noetic/share/gencpp/cmake/..
@@ -153,12 +153,12 @@ devel/include/hra_msgs/ExecuteTrajectoryResult.h: /opt/ros/noetic/share/gencpp/m
 
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/lib/gencpp/gen_cpp.py
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: devel/share/hra_msgs/msg/ExecuteTrajectoryFeedback.msg
-devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
+devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Quaternion.msg
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Pose.msg
-devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /home/hra/catkin_ws/src/hra_msgs/msg/TrajectoryPoint.msg
-devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Accel.msg
+devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Twist.msg
+devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Point.msg
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/geometry_msgs/msg/Vector3.msg
 devel/include/hra_msgs/ExecuteTrajectoryFeedback.h: /opt/ros/noetic/share/gencpp/msg.h.template
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/hra/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Generating C++ code from hra_msgs/ExecuteTrajectoryFeedback.msg"
