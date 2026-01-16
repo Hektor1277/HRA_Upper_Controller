@@ -29,6 +29,7 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Float64
 from tf.transformations import quaternion_from_euler
+from std_msgs.msg import Bool
 
 class HraControlPlugin(Plugin):
 
@@ -72,6 +73,8 @@ class HraControlPlugin(Plugin):
         self.pub_desired = rospy.Publisher('/desired_state_topic', TrajectoryPoint, queue_size=1)
         self.pub_path_viz = rospy.Publisher('/desired_csv_path', Path, queue_size=1, latch=True)
         self.pub_pose_viz = rospy.Publisher('/desired_pose_viz', PoseStamped, queue_size=1)
+        # 发布 /path_reset
+        self.pub_path_reset = rospy.Publisher('/path_reset', Bool, queue_size=1)
         
         # 订阅器 1: 期望状态 (TrajectoryPoint 包含所有期望值)
         self.desired_state_sub = rospy.Subscriber('/desired_state_topic', TrajectoryPoint, self.desired_state_callback)
@@ -151,6 +154,21 @@ class HraControlPlugin(Plugin):
         # 2. 更新特定轴的最大值 (Peak Hold per Axis)
         if abs(val) > abs(self.max_vals[key][ax]):
             self.max_vals[key][ax] = val
+
+    # 重置函数，只负责发信号
+    def reset_actual_path_viz(self):
+        """ 发送指令通知 C++ 节点清除轨迹 """
+        # 显式构造 Bool 消息，确保兼容性
+        msg = Bool()
+        msg.data = True
+        self.pub_path_reset.publish(msg)
+        rospy.loginfo("Sent reset signal to Bridge Node.")
+
+    def actual_state_callback(self, msg):
+        pos = msg.pose.pose.position
+        vel = msg.twist.twist.linear
+        self._widget.label_actual_pos.setText(f"X:{pos.x:.2f} Y:{pos.y:.2f} Z:{pos.z:.2f}")
+        self._widget.label_actual_vel.setText(f"X:{vel.x:.2f} Y:{vel.y:.2f} Z:{vel.z:.2f}")
 
     def desired_state_callback(self, msg):
         """ 处理期望状态消息 (TrajectoryPoint) 并解包到字典 """
@@ -307,13 +325,19 @@ class HraControlPlugin(Plugin):
             self.csv_playing = False
             self.play_timer.stop()
             self._widget.btn_csv_play.setText("Play")
+            self.stop_rosbag_recording() # 停止录制
         else:
-            # [Reset Trigger] Start Playback
+            # 开始播放逻辑
             self.reset_performance_metrics()
+            self.reset_actual_path_viz() 
             self.csv_playing = True
             self.csv_start_time = rospy.Time.now().to_sec()
             self.play_timer.start(10)
             self._widget.btn_csv_play.setText("Stop")
+            #  CSV 专用录制函数
+            current_rel_path = self._widget.comboBox_csv_files.currentText()
+            safe_name = current_rel_path.replace(os.path.sep, '_').replace('.csv', '')
+            self.start_csv_rosbag(safe_name)
 
     def update_csv_playback(self):
         if not self.csv_playing: return
@@ -336,6 +360,7 @@ class HraControlPlugin(Plugin):
         if state == Qt.Checked:
             # [Reset Trigger] Enable Manual Stream
             self.reset_performance_metrics()
+            self.reset_actual_path_viz() 
             self.manual_active = True
             self.manual_timer.start(10)
             self._widget.btn_csv_play.setEnabled(False)
@@ -349,6 +374,8 @@ class HraControlPlugin(Plugin):
     def send_manual_single_frame(self):
         # [Reset Trigger] Single Shot
         self.reset_performance_metrics()
+        self.reset_actual_path_viz()
+        self._widget.label_status.setText("Manual Single Shot")
         self.update_manual_setpoint()
 
     def update_manual_setpoint(self):
@@ -385,7 +412,7 @@ class HraControlPlugin(Plugin):
             
         # [Reset Trigger] Send Goal
         self.reset_performance_metrics()
-        self.start_rosbag_recording(pos_x, pos_y, pos_z, duration)
+        self.reset_actual_path_viz()
 
         goal = ExecuteTrajectoryGoal()
         goal.target_pose.position.x = pos_x; goal.target_pose.position.y = pos_y; goal.target_pose.position.z = pos_z
@@ -418,13 +445,44 @@ class HraControlPlugin(Plugin):
     def goal_feedback_cb(self, feedback):
         self._widget.label_elapsed_time.setText("{:.3f} s".format(feedback.elapsed_time))
 
-    def start_rosbag_recording(self, x, y, z, dur):
-        if self.rosbag_process is not None: self.stop_rosbag_recording()
-        topics = ["/desired_state_topic", "/desired_path", "/actual_path", "/rs_t265/odom/sample", "/tf", "/tf_static"]
-        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        fn = "{}_goal_X{:.1f}_Y{:.1f}_Z{:.1f}_dur{:.1f}s.bag".format(ts, x, y, z, dur)
-        cmd = ['rosbag', 'record', '-O', os.path.join(self.bags_dir, fn)] + topics
-        self.rosbag_process = subprocess.Popen(cmd)
+# ================= Rosbag 控制 =================
+
+    def start_csv_rosbag(self, filename_prefix):
+        """ 专用于 CSV 模式的录制函数 """
+        if self.rosbag_process is not None:
+            self.stop_rosbag_recording()
+
+        # 记录关键 Topic
+        topics_to_record = [
+            "/desired_state_topic", 
+            "/rs_t265/odom/sample", 
+            "/desired_pose_viz",
+            "/actual_path",
+            "/plot/pos/x/actual", "/plot/pos/y/actual", "/plot/pos/z/actual" # 建议记录部分 plot 数据用于分析
+        ]
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # 此时 filename_prefix 类似 "s_curve_traj_easy"
+        filename = f"{timestamp}_{filename_prefix}.bag"
+        full_path = os.path.join(self.bags_dir, filename)
+
+        command = ['rosbag', 'record', '-O', full_path] + topics_to_record
+        try:
+            self.rosbag_process = subprocess.Popen(command)
+            rospy.loginfo(f"Started CSV Bag: {filename}")
+        except Exception as e:
+            rospy.logerr(f"Failed to start rosbag: {e}")
+
+    def stop_rosbag_recording(self):
+        """ 通用停止函数 """
+        if self.rosbag_process is None: return
+        try:
+            self.rosbag_process.send_signal(signal.SIGINT)
+            self.rosbag_process.wait(timeout=2)
+            rospy.loginfo("Rosbag recording stopped.")
+        except:
+            self.rosbag_process.kill()
+        self.rosbag_process = None
 
     def stop_rosbag_recording(self):
         if self.rosbag_process is None: return

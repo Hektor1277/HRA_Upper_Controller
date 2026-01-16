@@ -6,29 +6,15 @@
 
 #IncludeRegexTransform: 
 
-/home/hra/catkin_ws/devel/include/hra_msgs/TrajectoryPoint.h
-string
--
-vector
--
-memory
--
-ros/types.h
--
-ros/serialization.h
--
-ros/builtin_message_traits.h
--
-ros/message_operations.h
--
-geometry_msgs/Pose.h
--
-geometry_msgs/Twist.h
--
-geometry_msgs/Accel.h
--
-
 /home/hra/catkin_ws/src/rs_t265_serial_bridge/src/rs_t265_serial_bridge_node.cpp
+thread
+-
+time.h
+-
+pthread.h
+-
+sched.h
+-
 ros/ros.h
 -
 serial/serial.h
@@ -38,6 +24,8 @@ nav_msgs/Odometry.h
 nav_msgs/Path.h
 -
 std_msgs/Float64.h
+-
+std_msgs/Bool.h
 -
 sensor_msgs/Imu.h
 -
@@ -1258,6 +1246,22 @@ stddef.h
 stdio.h
 -
 stdint.h
+-
+
+/opt/ros/noetic/include/std_msgs/Bool.h
+string
+-
+vector
+-
+memory
+-
+ros/types.h
+-
+ros/serialization.h
+-
+ros/builtin_message_traits.h
+-
+ros/message_operations.h
 -
 
 /opt/ros/noetic/include/std_msgs/Empty.h
@@ -2995,4 +2999,26 @@ lapacke_mangling.h
 /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 
 /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+
+devel/include/hra_msgs/TrajectoryPoint.h
+string
+-
+vector
+-
+memory
+-
+ros/types.h
+-
+ros/serialization.h
+-
+ros/builtin_message_traits.h
+-
+ros/message_operations.h
+-
+geometry_msgs/Pose.h
+-
+geometry_msgs/Twist.h
+-
+geometry_msgs/Accel.h
+-
 

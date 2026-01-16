@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(rs_t265_serial_bridge)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -28,6 +28,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## 查找 Orocos KDL 库
 find_package(orocos_kdl REQUIRED)
+
+find_package(Threads REQUIRED)
 
 if(NOT orocos_kdl_FOUND)
     set(orocos_kdl_LIBRARIES "/usr/lib/liborocos-kdl.so")
@@ -190,6 +192,7 @@ include_directories(
 target_link_libraries(rs_t265_serial_bridge_node
   ${catkin_LIBRARIES}
   ${orocos_kdl_LIBRARIES}        # 链接 KDL
+  ${CMAKE_THREAD_LIBS_INIT}  # <--- 添加这一行，显式链接系统线程库
 )
 
 target_link_libraries(rs_t265_serial_bridge_monitor

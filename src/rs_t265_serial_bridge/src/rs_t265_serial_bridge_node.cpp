@@ -20,11 +20,17 @@
  * 日期：2025-04-18
  */
 
+#include <thread>    // 提供多线程支持
+#include <time.h>    // 提供时间函数
+#include <pthread.h> // 提供线程调度功能
+#include <sched.h>   // 提供调度策略定义
+
 #include <ros/ros.h>           // ROS基本头文件，提供ROS相关函数
 #include <serial/serial.h>     // 提供串口通信功能
 #include <nav_msgs/Odometry.h> // ROS里程计数据消息类型（位姿与速度）
 #include <nav_msgs/Path.h>     // ROS路径消息类型
 #include <std_msgs/Float64.h>  // ROS标准浮点数消息类型
+#include <std_msgs/Bool.h>     // ROS标准布尔消息类型
 #include <sensor_msgs/Imu.h>   // ROS IMU数据消息类型（加速度与角速度）
 
 #include <tf2_ros/transform_listener.h>          // TF2 监听器，用于接收和缓存变换
@@ -101,6 +107,23 @@ bool g_debug_msg_consumed = true; // 标记消息是否已被处理
 ros::Publisher actual_path_pub;
 nav_msgs::Path actual_path_msg; // 用于累积实际路径
 
+// 路径数据的互斥锁，防止多线程竞争（定时器写 vs 回调清空）
+std::mutex path_mutex;
+
+// 原子标志位，用于线程间通信
+std::atomic<bool> g_reset_trigger(false);
+
+// 接收路径重置指令的回调函数
+void resetPathCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+  if (msg->data)
+  {
+    // 仅设置标志位，具体操作交给主循环，避免线程竞争
+    g_reset_trigger = true;
+    ROS_WARN(">>> Reset Request Received. Scheduled for execution. <<<");
+  }
+}
+
 // rqt_plot 发布器
 // 位置
 ros::Publisher plot_pos_x_des_pub, plot_pos_x_act_pub;
@@ -128,6 +151,29 @@ ros::Publisher plot_ang_acc_z_des_pub, plot_ang_acc_z_act_pub;
 std::deque<std::array<float, 3>> ang_acc_buffer;
 std::array<float, 3> prev_ang_vel = {0.0f, 0.0f, 0.0f}; // 保存上次角速度与时间，用于差分计算
 ros::Time prev_imu_time;
+
+// =============================================================
+// @brief 将当前线程设置为实时优先级(SCHED_FIFO)
+// @param priority 优先级(1 - 99)，99最高。通常设置为 50 - 80 即可，太高会卡死系统鼠标键盘。
+// =============================================================
+void setRealtimePriority(int priority)
+{
+  struct sched_param param;
+  param.sched_priority = priority;
+
+  // 获取当前线程句柄
+  pthread_t this_thread = pthread_self();
+
+  // 设置调度策略为 SCHED_FIFO (实时先入先出)
+  if (pthread_setschedparam(this_thread, SCHED_FIFO, &param) != 0)
+  {
+    ROS_WARN("Failed to set Real-Time priority. Run with sudo or setcap CAP_SYS_NICE.");
+  }
+  else
+  {
+    ROS_INFO("Real-Time priority set to SCHED_FIFO (prio=%d). Stable 100Hz guaranteed.", priority);
+  }
+}
 
 // 串口数据帧参数
 static uint32_t g_seq = 1; // 帧序号（从 1 开始）
@@ -228,526 +274,582 @@ void desiredStateCallback(const hra_msgs::TrajectoryPoint::ConstPtr &msg)
 // @param event 定时器事件信息（未使用）
 // ==================================================================
 
-void timerCallback(const ros::TimerEvent &)
+// ==================================================================
+// @brief 独立的串口发送线程 (硬实时循环)
+//        使用 clock_nanosleep 保证精确的 100Hz 节拍，不受 ROS 回调队列阻塞
+// ==================================================================
+void serialTxLoop()
 {
-  // —— 1. 复制缓存数据 、对齐时间戳、检查空frame ——
-  // 先一次性读取系统当前时刻，后面两段选最近消息都用同一个基准
-  const ros::Time t_ref = ros::Time::now();
+  // 1. 在本线程内设置实时优先级 (SCHED_FIFO, 60)
+  //    这确保 Linux 内核在任何情况下都优先执行此循环
+  setRealtimePriority(60);
 
-  nav_msgs::Odometry odom_msg;
-  sensor_msgs::Imu imu_msg;
+  // 2. 初始化绝对时间
+  double period_sec = 1.0 / g_frequency;
+  struct timespec next_time;
+  clock_gettime(CLOCK_MONOTONIC, &next_time);
+
+  ROS_INFO("Serial Tx Thread started at %.1f Hz (RT Priority)", g_frequency);
+
+  while (ros::ok())
   {
-    std::lock_guard<std::mutex> lk(data_mutex);
-    // —— 1) 从 odom_buffer 里找出与当前时刻差值绝对值最小的一条 ——
-    if (!odom_buffer.empty())
+    // --- 计算下一次唤醒的绝对时间点 ---
+    // next_time += period
+    next_time.tv_sec += (time_t)period_sec;
+    next_time.tv_nsec += (long)((period_sec - (long)period_sec) * 1e9);
+
+    // 进位处理 (nsec 溢出)
+    if (next_time.tv_nsec >= 1000000000L)
     {
-      auto best_it = odom_buffer.begin();
-      // 计算初始 best_diff（手动取绝对值）
-      ros::Duration best_diff = (best_it->header.stamp >= t_ref)
-                                    ? (best_it->header.stamp - t_ref)
-                                    : (t_ref - best_it->header.stamp);
-      for (auto it = odom_buffer.begin(); it != odom_buffer.end(); ++it)
+      next_time.tv_sec++;
+      next_time.tv_nsec -= 1000000000L;
+    }
+
+    // --- 绝对时间休眠 (关键) ---
+    // 无论中间处理花了多久，这里都会精确睡到下一个节拍点
+    // 如果处理超时，clock_nanosleep 会立即返回，自动追赶进度
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_time, NULL);
+
+    // —— 1. 复制缓存数据 、对齐时间戳、检查空frame ——
+    // 先一次性读取系统当前时刻，后面两段选最近消息都用同一个基准
+    const ros::Time t_ref = ros::Time::now();
+
+    nav_msgs::Odometry odom_msg;
+    sensor_msgs::Imu imu_msg;
+    {
+      std::lock_guard<std::mutex> lk(data_mutex);
+      // —— 1) 从 odom_buffer 里找出与当前时刻差值绝对值最小的一条 ——
+      if (!odom_buffer.empty())
       {
-        ros::Duration diff = (it->header.stamp >= t_ref)
-                                 ? (it->header.stamp - t_ref)
-                                 : (t_ref - it->header.stamp);
-        if (diff < best_diff)
+        auto best_it = odom_buffer.begin();
+        // 计算初始 best_diff（手动取绝对值）
+        ros::Duration best_diff = (best_it->header.stamp >= t_ref)
+                                      ? (best_it->header.stamp - t_ref)
+                                      : (t_ref - best_it->header.stamp);
+        for (auto it = odom_buffer.begin(); it != odom_buffer.end(); ++it)
         {
-          best_diff = diff;
-          best_it = it;
+          ros::Duration diff = (it->header.stamp >= t_ref)
+                                   ? (it->header.stamp - t_ref)
+                                   : (t_ref - it->header.stamp);
+          if (diff < best_diff)
+          {
+            best_diff = diff;
+            best_it = it;
+          }
         }
+        odom_msg = *best_it;
       }
-      odom_msg = *best_it;
-    }
-    else
-    {
-      odom_msg = latest_odom; // buffer 为空时回退
-    }
-
-    // —— 2) 同理，从 imu_buffer 里选最贴近当前时刻的一条 ——
-    if (!imu_buffer.empty())
-    {
-      auto best_it = imu_buffer.begin();
-      ros::Duration best_diff = (best_it->header.stamp >= t_ref)
-                                    ? (best_it->header.stamp - t_ref)
-                                    : (t_ref - best_it->header.stamp);
-      for (auto it = imu_buffer.begin(); it != imu_buffer.end(); ++it)
+      else
       {
-        ros::Duration diff = (it->header.stamp >= t_ref)
-                                 ? (it->header.stamp - t_ref)
-                                 : (t_ref - it->header.stamp);
-        if (diff < best_diff)
-        {
-          best_diff = diff;
-          best_it = it;
-        }
+        odom_msg = latest_odom; // buffer 为空时回退
       }
-      imu_msg = *best_it;
+
+      // —— 2) 同理，从 imu_buffer 里选最贴近当前时刻的一条 ——
+      if (!imu_buffer.empty())
+      {
+        auto best_it = imu_buffer.begin();
+        ros::Duration best_diff = (best_it->header.stamp >= t_ref)
+                                      ? (best_it->header.stamp - t_ref)
+                                      : (t_ref - best_it->header.stamp);
+        for (auto it = imu_buffer.begin(); it != imu_buffer.end(); ++it)
+        {
+          ros::Duration diff = (it->header.stamp >= t_ref)
+                                   ? (it->header.stamp - t_ref)
+                                   : (t_ref - it->header.stamp);
+          if (diff < best_diff)
+          {
+            best_diff = diff;
+            best_it = it;
+          }
+        }
+        imu_msg = *best_it;
+      }
+      else
+      {
+        imu_msg = latest_imu;
+      }
     }
-    else
+
+    // 只有收到有效的frame_id后才做变换
+    if (odom_msg.header.frame_id.empty() || imu_msg.header.frame_id.empty())
     {
-      imu_msg = latest_imu;
+      ROS_WARN_THROTTLE(5, "Waiting for valid Odometry/IMU data (frame_id empty)...");
+      return;
     }
-  }
 
-  // 只有收到有效的frame_id后才做变换
-  if (odom_msg.header.frame_id.empty() || imu_msg.header.frame_id.empty())
-  {
-    ROS_WARN_THROTTLE(5, "Waiting for valid Odometry/IMU data (frame_id empty)...");
-    return;
-  }
+    // 2. Pose（位置+姿态）：获取base_link在世界坐标系下位姿
+    // 获取位姿
+    geometry_msgs::TransformStamped tf_odom_base;
+    try
+    {
+      tf_odom_base = tf_buffer_ptr->lookupTransform(
+          odom,      // 目标 (world)
+          base_link, // 源   (robot)
+          ros::Time(0),
+          ros::Duration(0.01));
+    }
+    catch (const tf2::TransformException &ex)
+    {
+      ROS_WARN_STREAM_THROTTLE(1.0, "TF lookup odom→base failed: " << ex.what());
+      return;
+    }
 
-  // 2. Pose（位置+姿态）：获取base_link在世界坐标系下位姿
-  // 获取位姿
-  geometry_msgs::TransformStamped tf_odom_base;
-  try
-  {
-    tf_odom_base = tf_buffer_ptr->lookupTransform(
-        odom,      // 目标 (world)
-        base_link, // 源   (robot)
-        ros::Time(0),
-        ros::Duration(0.01));
-  }
-  catch (const tf2::TransformException &ex)
-  {
-    ROS_WARN_STREAM_THROTTLE(1.0, "TF lookup odom→base failed: " << ex.what());
-    return;
-  }
+    // 2.1 用 Eigen 取出世界系下位置 & 四元数
+    Eigen::Vector3d pos_world(
+        tf_odom_base.transform.translation.x,
+        tf_odom_base.transform.translation.y,
+        tf_odom_base.transform.translation.z);
 
-  // 2.1 用 Eigen 取出世界系下位置 & 四元数
-  Eigen::Vector3d pos_world(
-      tf_odom_base.transform.translation.x,
-      tf_odom_base.transform.translation.y,
-      tf_odom_base.transform.translation.z);
+    tf2::Quaternion q_base;
+    tf2::fromMsg(tf_odom_base.transform.rotation, q_base);
+    double qw = q_base.w(), qx = q_base.x(),
+           qy = q_base.y(), qz = q_base.z();
+    Eigen::Quaterniond quat_world(qw, qx, qy, qz);
 
-  tf2::Quaternion q_base;
-  tf2::fromMsg(tf_odom_base.transform.rotation, q_base);
-  double qw = q_base.w(), qx = q_base.x(),
-         qy = q_base.y(), qz = q_base.z();
-  Eigen::Quaterniond quat_world(qw, qx, qy, qz);
+    // 2.2 静态安装偏置补偿
+    // offset_..._ 在类里通过参数 (不同构型) 已经读入
+    Eigen::Vector3d offset_body;
+    offset_body = Eigen::Vector3d(offset_x_, offset_y_, offset_z_);
 
-  // 2.2 静态安装偏置补偿
-  // offset_..._ 在类里通过参数 (不同构型) 已经读入
-  Eigen::Vector3d offset_body;
-  offset_body = Eigen::Vector3d(offset_x_, offset_y_, offset_z_);
+    // 世界系下，偏置在机体系下 rotated 到世界系
+    Eigen::Vector3d offset_world = quat_world * offset_body;
+    Eigen::Vector3d pos_base_world = pos_world + offset_world;
 
-  // 世界系下，偏置在机体系下 rotated 到世界系
-  Eigen::Vector3d offset_world = quat_world * offset_body;
-  Eigen::Vector3d pos_base_world = pos_world + offset_world;
+    // 把补偿后的位置写回 tf_odom_base
+    tf_odom_base.transform.translation.x = static_cast<float>(pos_base_world.x());
+    tf_odom_base.transform.translation.y = static_cast<float>(pos_base_world.y());
+    tf_odom_base.transform.translation.z = static_cast<float>(pos_base_world.z());
+    // 旋转保持不变
+    tf_odom_base.transform.rotation = tf2::toMsg(q_base);
 
-  // 把补偿后的位置写回 tf_odom_base
-  tf_odom_base.transform.translation.x = static_cast<float>(pos_base_world.x());
-  tf_odom_base.transform.translation.y = static_cast<float>(pos_base_world.y());
-  tf_odom_base.transform.translation.z = static_cast<float>(pos_base_world.z());
-  // 旋转保持不变
-  tf_odom_base.transform.rotation = tf2::toMsg(q_base);
+    // 3. Twist (线速度)：KDL 实现 odom→pose 的速度变换 + 刚体速度补偿
+    // 3.1 查询 odom→pose_frame
+    geometry_msgs::TransformStamped tf_odom_pose;
+    try
+    {
+      tf_odom_pose = tf_buffer_ptr->lookupTransform(
+          odom,
+          pose,
+          ros::Time(0),
+          ros::Duration(0.01));
+    }
+    catch (const tf2::TransformException &ex)
+    {
+      ROS_WARN_STREAM_THROTTLE(1.0, "TF lookup odom→pose_frame failed: " << ex.what());
+      return;
+    }
 
-  // 3. Twist (线速度)：KDL 实现 odom→pose 的速度变换 + 刚体速度补偿
-  // 3.1 查询 odom→pose_frame
-  geometry_msgs::TransformStamped tf_odom_pose;
-  try
-  {
-    tf_odom_pose = tf_buffer_ptr->lookupTransform(
-        odom,
-        pose,
-        ros::Time(0),
-        ros::Duration(0.01));
-  }
-  catch (const tf2::TransformException &ex)
-  {
-    ROS_WARN_STREAM_THROTTLE(1.0, "TF lookup odom→pose_frame failed: " << ex.what());
-    return;
-  }
+    // 3.2 构造 TwistStamped 并借助 tf2_kdl 做坐标系转换
+    geometry_msgs::TwistStamped twist_in;
+    twist_in.header.stamp = odom_msg.header.stamp;
+    twist_in.header.frame_id = pose; // 源 = pose_frame
+    twist_in.twist = odom_msg.twist.twist;
 
-  // 3.2 构造 TwistStamped 并借助 tf2_kdl 做坐标系转换
-  geometry_msgs::TwistStamped twist_in;
-  twist_in.header.stamp = odom_msg.header.stamp;
-  twist_in.header.frame_id = pose; // 源 = pose_frame
-  twist_in.twist = odom_msg.twist.twist;
+    tf2::Stamped<KDL::Twist> kdl_in;
+    tf2::fromMsg(twist_in, kdl_in);
 
-  tf2::Stamped<KDL::Twist> kdl_in;
-  tf2::fromMsg(twist_in, kdl_in);
+    tf2::Stamped<KDL::Twist> kdl_out;
+    try
+    {
+      tf2::doTransform(kdl_in, kdl_out, tf_odom_pose);
+    }
+    catch (const tf2::TransformException &ex)
+    {
+      ROS_WARN_STREAM_THROTTLE(1.0, "TF doTransform(Twist) failed: " << ex.what());
+      return;
+    }
+    geometry_msgs::TwistStamped twist_odom = tf2::toMsg(kdl_out);
 
-  tf2::Stamped<KDL::Twist> kdl_out;
-  try
-  {
-    tf2::doTransform(kdl_in, kdl_out, tf_odom_pose);
-  }
-  catch (const tf2::TransformException &ex)
-  {
-    ROS_WARN_STREAM_THROTTLE(1.0, "TF doTransform(Twist) failed: " << ex.what());
-    return;
-  }
-  geometry_msgs::TwistStamped twist_odom = tf2::toMsg(kdl_out);
+    // 3.3 刚体速度补偿 v_base = v_pose + ω × r
+    Eigen::Vector3d v_world(
+        twist_odom.twist.linear.x,
+        twist_odom.twist.linear.y,
+        twist_odom.twist.linear.z);
+    Eigen::Vector3d omega_world(
+        twist_odom.twist.angular.x,
+        twist_odom.twist.angular.y,
+        twist_odom.twist.angular.z);
 
-  // 3.3 刚体速度补偿 v_base = v_pose + ω × r
-  Eigen::Vector3d v_world(
-      twist_odom.twist.linear.x,
-      twist_odom.twist.linear.y,
-      twist_odom.twist.linear.z);
-  Eigen::Vector3d omega_world(
-      twist_odom.twist.angular.x,
-      twist_odom.twist.angular.y,
-      twist_odom.twist.angular.z);
+    // r = (补偿后 base_world) - (pose 在 world)：
+    Eigen::Vector3d p_pose_world(
+        tf_odom_pose.transform.translation.x,
+        tf_odom_pose.transform.translation.y,
+        tf_odom_pose.transform.translation.z);
+    Eigen::Vector3d r = pos_base_world - p_pose_world;
+    v_world += omega_world.cross(r);
 
-  // r = (补偿后 base_world) - (pose 在 world)：
-  Eigen::Vector3d p_pose_world(
-      tf_odom_pose.transform.translation.x,
-      tf_odom_pose.transform.translation.y,
-      tf_odom_pose.transform.translation.z);
-  Eigen::Vector3d r = pos_base_world - p_pose_world;
-  v_world += omega_world.cross(r);
+    // 4. IMU 加速度/角速度：world→body + 重力补偿
+    geometry_msgs::Vector3Stamped acc_in, acc_base, gyro_in, gyro_base;
+    acc_in.header = gyro_in.header = imu_msg.header;
+    acc_in.header.frame_id = imu_msg.header.frame_id;
+    gyro_in.header.frame_id = imu_msg.header.frame_id;
+    acc_in.vector = imu_msg.linear_acceleration;
+    gyro_in.vector = imu_msg.angular_velocity;
 
-  // 4. IMU 加速度/角速度：world→body + 重力补偿
-  geometry_msgs::Vector3Stamped acc_in, acc_base, gyro_in, gyro_base;
-  acc_in.header = gyro_in.header = imu_msg.header;
-  acc_in.header.frame_id = imu_msg.header.frame_id;
-  gyro_in.header.frame_id = imu_msg.header.frame_id;
-  acc_in.vector = imu_msg.linear_acceleration;
-  gyro_in.vector = imu_msg.angular_velocity;
+    try
+    {
+      tf_buffer_ptr->transform(acc_in, acc_base, base_link, ros::Duration(0.01));
+      tf_buffer_ptr->transform(gyro_in, gyro_base, base_link, ros::Duration(0.01));
+    }
+    catch (const tf2::TransformException &ex)
+    {
+      ROS_WARN_STREAM_THROTTLE(1, "IMU TF 失败: " << ex.what());
+      return;
+    }
+    // 4.1 重力补偿： g_world = (0,0,9.81)
+    tf2::Vector3 g_w(0, 0, 9.81), g_b = tf2::quatRotate(q_base.inverse(), g_w);
+    acc_base.vector.x -= g_b.x();
+    acc_base.vector.y -= g_b.y();
+    acc_base.vector.z -= g_b.z();
 
-  try
-  {
-    tf_buffer_ptr->transform(acc_in, acc_base, base_link, ros::Duration(0.01));
-    tf_buffer_ptr->transform(gyro_in, gyro_base, base_link, ros::Duration(0.01));
-  }
-  catch (const tf2::TransformException &ex)
-  {
-    ROS_WARN_STREAM_THROTTLE(1, "IMU TF 失败: " << ex.what());
-    return;
-  }
-  // 4.1 重力补偿： g_world = (0,0,9.81)
-  tf2::Vector3 g_w(0, 0, 9.81), g_b = tf2::quatRotate(q_base.inverse(), g_w);
-  acc_base.vector.x -= g_b.x();
-  acc_base.vector.y -= g_b.y();
-  acc_base.vector.z -= g_b.z();
+    // —— 5. 提取数据：位置/速度/加速度 ——
+    std::array<float, 3> pos, vel, acc, ang, ang_vel, ang_acc;
+    // —— 5.1 位置 (m) ——
+    pos = {
+        static_cast<float>(tf_odom_base.transform.translation.x),
+        static_cast<float>(tf_odom_base.transform.translation.y),
+        static_cast<float>(tf_odom_base.transform.translation.z)};
+    // —— 5.2 线速度 (m/s) ——
+    vel = {
+        static_cast<float>(v_world.x()),
+        static_cast<float>(v_world.y()),
+        static_cast<float>(v_world.z())};
+    // —— 5.3 线加速度 (m/s²) ——
+    acc = {
+        static_cast<float>(acc_base.vector.x),
+        static_cast<float>(acc_base.vector.y),
+        static_cast<float>(acc_base.vector.z)};
 
-  // —— 5. 提取数据：位置/速度/加速度 ——
-  std::array<float, 3> pos, vel, acc, ang, ang_vel, ang_acc;
-  // —— 5.1 位置 (m) ——
-  pos = {
-      static_cast<float>(tf_odom_base.transform.translation.x),
-      static_cast<float>(tf_odom_base.transform.translation.y),
-      static_cast<float>(tf_odom_base.transform.translation.z)};
-  // —— 5.2 线速度 (m/s) ——
-  vel = {
-      static_cast<float>(v_world.x()),
-      static_cast<float>(v_world.y()),
-      static_cast<float>(v_world.z())};
-  // —— 5.3 线加速度 (m/s²) ——
-  acc = {
-      static_cast<float>(acc_base.vector.x),
-      static_cast<float>(acc_base.vector.y),
-      static_cast<float>(acc_base.vector.z)};
+    // —— 5.4 欧拉角转换 (四元数 → roll,pitch,yaw)并存储 ——
+    {
+      // 使用tf2的Matrix3x3提取欧拉角 (RPY，单位为弧度)
+      double roll_rad, pitch_rad, yaw_rad;
+      tf2::Matrix3x3(q_base).getRPY(roll_rad, pitch_rad, yaw_rad);
 
-  // —— 5.4 欧拉角转换 (四元数 → roll,pitch,yaw)并存储 ——
-  {
-    // 使用tf2的Matrix3x3提取欧拉角 (RPY，单位为弧度)
-    double roll_rad, pitch_rad, yaw_rad;
-    tf2::Matrix3x3(q_base).getRPY(roll_rad, pitch_rad, yaw_rad);
+      // 角度 (rad)
+      ang = {
+          static_cast<float>(roll_rad),
+          static_cast<float>(pitch_rad),
+          static_cast<float>(yaw_rad)};
+    }
 
-    // 角度 (rad)
-    ang = {
-        static_cast<float>(roll_rad),
-        static_cast<float>(pitch_rad),
-        static_cast<float>(yaw_rad)};
-  }
+    // —— 5.5 角速度 (rad/s) ——
+    ang_vel = {
+        static_cast<float>(gyro_base.vector.x),
+        static_cast<float>(gyro_base.vector.y),
+        static_cast<float>(gyro_base.vector.z)};
 
-  // —— 5.5 角速度 (rad/s) ——
-  ang_vel = {
-      static_cast<float>(gyro_base.vector.x),
-      static_cast<float>(gyro_base.vector.y),
-      static_cast<float>(gyro_base.vector.z)};
+    // 5.6 角加速度 (rad/s²) → 差分 + 滑动平均
+    // 计算滑动平均角加速度 (rad/s²)
+    ros::Time curr_time = imu_msg.header.stamp;
+    double dt = (curr_time - prev_imu_time).toSec(); // IMU 更新周期
+    prev_imu_time = curr_time;
 
-  // 5.6 角加速度 (rad/s²) → 差分 + 滑动平均
-  // 计算滑动平均角加速度 (rad/s²)
-  ros::Time curr_time = imu_msg.header.stamp;
-  double dt = (curr_time - prev_imu_time).toSec(); // IMU 更新周期
-  prev_imu_time = curr_time;
-
-  // 差分计算角加速度
-  std::array<float, 3> ang_acc_diff = {0, 0, 0};
-  for (int i = 0; i < 3; ++i)
-  {
-    ang_acc_diff[i] = (dt > 0.0)
-                          ? (ang_vel[i] - prev_ang_vel[i]) / static_cast<float>(dt)
-                          : 0.0f;
-  }
-
-  // 更新 prev_ang_vel
-  prev_ang_vel = ang_vel;
-
-  // 推入缓冲用于滑动平均
-  ang_acc_buffer.push_back(ang_acc_diff);
-  if ((int)ang_acc_buffer.size() > ACC_WINDOW_SIZE)
-  {
-    ang_acc_buffer.pop_front();
-  }
-
-  // 计算均值
-  ang_acc = {0.0f, 0.0f, 0.0f};
-  for (auto &d : ang_acc_buffer)
-  {
+    // 差分计算角加速度
+    std::array<float, 3> ang_acc_diff = {0, 0, 0};
     for (int i = 0; i < 3; ++i)
-      ang_acc[i] += d[i];
-  }
-  for (int i = 0; i < 3; ++i)
-  {
-    ang_acc[i] = ang_acc_buffer.empty()
-                     ? 0.0f
-                     : ang_acc[i] / static_cast<float>(ang_acc_buffer.size());
-  }
-
-  // --- 6. 获取期望数据 ---
-  hra_msgs::TrajectoryPoint desired_state;
-  {
-    std::lock_guard<std::mutex> lock(desired_state_mutex);
-    // 安全检查：如果超过0.2秒没收到新指令，则切换为悬停指令
-    if (desired_state_received && (ros::Time::now() - last_desired_state_time).toSec() < 0.2)
     {
-      desired_state = latest_desired_state;
+      ang_acc_diff[i] = (dt > 0.0)
+                            ? (ang_vel[i] - prev_ang_vel[i]) / static_cast<float>(dt)
+                            : 0.0f;
     }
-    else
+
+    // 更新 prev_ang_vel
+    prev_ang_vel = ang_vel;
+
+    // 推入缓冲用于滑动平均
+    ang_acc_buffer.push_back(ang_acc_diff);
+    if ((int)ang_acc_buffer.size() > ACC_WINDOW_SIZE)
     {
-      // 生成悬停指令：期望位置=当前实际位置，其余为0
-      desired_state.pose.position.x = pos[0];
-      desired_state.pose.position.y = pos[1];
-      desired_state.pose.position.z = pos[2];
-      desired_state.pose.orientation = tf_odom_base.transform.rotation;
-      // 速度和加速度默认为0
+      ang_acc_buffer.pop_front();
     }
-  }
 
-  // —— 7. 构建协议数据段 ——
-  // 按协议：float ×36个 → int16_t ×36个 (乘以1000)
-  std::vector<int16_t> all_data;
-  all_data.reserve(36);
-  auto append = [&](float v)
-  {
-    // 乘以1000并截断到 [-32768,32767]范围，避免溢出
-    int32_t iv = static_cast<int32_t>(v * 1000.0f);
-    iv = std::max(-32768, std::min(32767, iv));
-    all_data.push_back(static_cast<int16_t>(iv));
-  };
-  // 遍历插入：
-  // 期望值： 位置 (m), 速度 (m/s), 线加速度 (m^2), 共9个数据
-  append(desired_state.pose.position.x);
-  append(desired_state.pose.position.y);
-  append(desired_state.pose.position.z);
-  append(desired_state.velocity.linear.x);
-  append(desired_state.velocity.linear.y);
-  append(desired_state.velocity.linear.z);
-  append(desired_state.acceleration.linear.x);
-  append(desired_state.acceleration.linear.y);
-  append(desired_state.acceleration.linear.z);
+    // 计算均值
+    ang_acc = {0.0f, 0.0f, 0.0f};
+    for (auto &d : ang_acc_buffer)
+    {
+      for (int i = 0; i < 3; ++i)
+        ang_acc[i] += d[i];
+    }
+    for (int i = 0; i < 3; ++i)
+    {
+      ang_acc[i] = ang_acc_buffer.empty()
+                       ? 0.0f
+                       : ang_acc[i] / static_cast<float>(ang_acc_buffer.size());
+    }
 
-  // 期望值： 欧拉角 (rad), 角速度 (rad/s), 角加速度 (rad/s²), 共9个数据
-  tf2::Quaternion q_des;
-  tf2::fromMsg(desired_state.pose.orientation, q_des);
-  double r_des, p_des, y_des;
-  tf2::Matrix3x3(q_des).getRPY(r_des, p_des, y_des);
-  append(r_des);
-  append(p_des);
-  append(y_des);
-  append(desired_state.velocity.angular.x);
-  append(desired_state.velocity.angular.y);
-  append(desired_state.velocity.angular.z);
-  append(desired_state.acceleration.angular.x);
-  append(desired_state.acceleration.angular.y);
-  append(desired_state.acceleration.angular.z);
-
-  // 实际值: 位置 (m), 速度 (m/s), 线加速度 (m^2), 共9个数据
-  for (float v : pos)
-    append(v);
-  for (float v : vel)
-    append(v);
-  for (float v : acc)
-    append(v);
-
-  // 实际值: 欧拉角 (rad), 角速度 (rad/s), 滑动平均角加速度 (rad/s²), 共9个数据
-  for (float v : ang)
-    append(v);
-  for (float v : ang_vel)
-    append(v);
-  for (float v : ang_acc)
-    append(v);
-
-  // 8. 发布可视化数据
-  // 8.1 更新并发布实际路径
-  geometry_msgs::PoseStamped current_pose_stamped;
-  current_pose_stamped.header.stamp = ros::Time::now();
-  current_pose_stamped.header.frame_id = odom;
-  current_pose_stamped.pose.position.x = pos[0];
-  current_pose_stamped.pose.position.y = pos[1];
-  current_pose_stamped.pose.position.z = pos[2];
-  current_pose_stamped.pose.orientation = tf_odom_base.transform.rotation;
-
-  actual_path_msg.header = current_pose_stamped.header;
-  actual_path_msg.poses.push_back(current_pose_stamped);
-  // // 可选：为了防止路径过长，可以限制其大小
-  // if (actual_path_msg.poses.size() > 20000)
-  // { // 保留最新的20000个点
-  //   actual_path_msg.poses.erase(actual_path_msg.poses.begin());
-  // }
-  static ros::Time last_path_pub_time = ros::Time::now();
-  if ((ros::Time::now() - last_path_pub_time).toSec() > 0.1)
-  { // 降低到10Hz
-    actual_path_pub.publish(actual_path_msg);
-    last_path_pub_time = ros::Time::now();
-  }
-
-  // 8.2 发布用于 rqt_plot 的数据
-  std_msgs::Float64 msg_f64;
-  // 位置
-  msg_f64.data = desired_state.pose.position.x;
-  plot_pos_x_des_pub.publish(msg_f64);
-  msg_f64.data = pos[0];
-  plot_pos_x_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.pose.position.y;
-  plot_pos_y_des_pub.publish(msg_f64);
-  msg_f64.data = pos[1];
-  plot_pos_y_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.pose.position.z;
-  plot_pos_z_des_pub.publish(msg_f64);
-  msg_f64.data = pos[2];
-  plot_pos_z_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.velocity.linear.x;
-  plot_vel_x_des_pub.publish(msg_f64);
-  msg_f64.data = vel[0];
-  plot_vel_x_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.velocity.linear.y;
-  plot_vel_y_des_pub.publish(msg_f64);
-  msg_f64.data = vel[1];
-  plot_vel_y_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.velocity.linear.z;
-  plot_vel_z_des_pub.publish(msg_f64);
-  msg_f64.data = vel[2];
-  plot_vel_z_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.acceleration.linear.x;
-  plot_acc_x_des_pub.publish(msg_f64);
-  msg_f64.data = acc[0];
-  plot_acc_x_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.acceleration.linear.y;
-  plot_acc_y_des_pub.publish(msg_f64);
-  msg_f64.data = acc[1];
-  plot_acc_y_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.acceleration.linear.z;
-  plot_acc_z_des_pub.publish(msg_f64);
-  msg_f64.data = acc[2];
-  plot_acc_z_act_pub.publish(msg_f64);
-
-  // 角度
-  msg_f64.data = r_des;
-  plot_ang_x_des_pub.publish(msg_f64);
-  msg_f64.data = ang[0];
-  plot_ang_x_act_pub.publish(msg_f64);
-
-  msg_f64.data = p_des;
-  plot_ang_y_des_pub.publish(msg_f64);
-  msg_f64.data = ang[1];
-  plot_ang_y_act_pub.publish(msg_f64);
-
-  msg_f64.data = y_des;
-  plot_ang_z_des_pub.publish(msg_f64);
-  msg_f64.data = ang[2];
-  plot_ang_z_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.velocity.angular.x;
-  plot_ang_vel_x_des_pub.publish(msg_f64);
-  msg_f64.data = ang_vel[0];
-  plot_ang_vel_x_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.velocity.angular.y;
-  plot_ang_vel_y_des_pub.publish(msg_f64);
-  msg_f64.data = ang_vel[1];
-  plot_ang_vel_y_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.velocity.angular.z;
-  plot_ang_vel_z_des_pub.publish(msg_f64);
-  msg_f64.data = ang_vel[2];
-  plot_ang_vel_z_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.acceleration.angular.x;
-  plot_ang_acc_x_des_pub.publish(msg_f64);
-  msg_f64.data = ang_acc[0];
-  plot_ang_acc_x_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.acceleration.angular.y;
-  plot_ang_acc_y_des_pub.publish(msg_f64);
-  msg_f64.data = ang_acc[1];
-  plot_ang_acc_y_act_pub.publish(msg_f64);
-
-  msg_f64.data = desired_state.acceleration.angular.z;
-  plot_ang_acc_z_des_pub.publish(msg_f64);
-  msg_f64.data = ang_acc[2];
-  plot_ang_acc_z_act_pub.publish(msg_f64);
-
-  // -------------------------------------------------------------
-  // 模式控制逻辑：决定是否通过串口发送
-  // -------------------------------------------------------------
-  bool should_send_serial = true;
-
-  if (g_run_mode == "debug")
-  {
-    // 调试模式下：只有当收到"新鲜"且"未消费"的控制指令时才发送
-    bool is_command_valid = false;
+    // --- 6. 获取期望数据 ---
+    hra_msgs::TrajectoryPoint desired_state;
     {
       std::lock_guard<std::mutex> lock(desired_state_mutex);
-
-      // 判定标准：有数据 + 数据新鲜(<0.5s) + 尚未发送过
-      if (desired_state_received &&
-          !g_debug_msg_consumed &&
-          (ros::Time::now() - last_desired_state_time).toSec() < 0.5)
+      // 安全检查：如果超过0.2秒没收到新指令，则切换为悬停指令
+      if (desired_state_received && (ros::Time::now() - last_desired_state_time).toSec() < 0.2)
       {
-        is_command_valid = true;
-        g_debug_msg_consumed = true; // [关键] 立即标记为已消费，防止下一帧继续发
+        desired_state = latest_desired_state;
+      }
+      else
+      {
+        // 生成悬停指令：期望位置=当前实际位置，其余为0
+        desired_state.pose.position.x = pos[0];
+        desired_state.pose.position.y = pos[1];
+        desired_state.pose.position.z = pos[2];
+        desired_state.pose.orientation = tf_odom_base.transform.rotation;
+        // 速度和加速度默认为0
       }
     }
 
-    if (!is_command_valid)
+    // —— 7. 构建协议数据段 ——
+    // 按协议：float ×36个 → int16_t ×36个 (乘以1000)
+    std::vector<int16_t> all_data;
+    all_data.reserve(36);
+    auto append = [&](float v)
     {
-      should_send_serial = false; // 拦截发送
-    }
-  }
-  // operating 模式下 should_send_serial 默认为 true，持续发送
+      // 乘以1000并截断到 [-32768,32767]范围，避免溢出
+      int32_t iv = static_cast<int32_t>(v * 1000.0f);
+      iv = std::max(-32768, std::min(32767, iv));
+      all_data.push_back(static_cast<int16_t>(iv));
+    };
+    // 遍历插入：
+    // 期望值： 位置 (m), 速度 (m/s), 线加速度 (m^2), 共9个数据
+    append(desired_state.pose.position.x);
+    append(desired_state.pose.position.y);
+    append(desired_state.pose.position.z);
+    append(desired_state.velocity.linear.x);
+    append(desired_state.velocity.linear.y);
+    append(desired_state.velocity.linear.z);
+    append(desired_state.acceleration.linear.x);
+    append(desired_state.acceleration.linear.y);
+    append(desired_state.acceleration.linear.z);
 
-  if (should_send_serial)
-  {
-    // 9. 构建完整帧：帧头(0xAA,0xBB)、帧序号、时间戳、数据、校验、帧尾(0xCC,0xDD)
-    std::vector<uint8_t> frame;
-    frame.reserve(90); // 2+4+8+72+2+2
+    // 期望值： 欧拉角 (rad), 角速度 (rad/s), 角加速度 (rad/s²), 共9个数据
+    tf2::Quaternion q_des;
+    tf2::fromMsg(desired_state.pose.orientation, q_des);
+    double r_des, p_des, y_des;
+    tf2::Matrix3x3(q_des).getRPY(r_des, p_des, y_des);
+    append(r_des);
+    append(p_des);
+    append(y_des);
+    append(desired_state.velocity.angular.x);
+    append(desired_state.velocity.angular.y);
+    append(desired_state.velocity.angular.z);
+    append(desired_state.acceleration.angular.x);
+    append(desired_state.acceleration.angular.y);
+    append(desired_state.acceleration.angular.z);
 
-    // 9.1 帧头 (2字节)
-    frame.push_back(0xAA);
-    frame.push_back(0xBB);
+    // 实际值: 位置 (m), 速度 (m/s), 线加速度 (m^2), 共9个数据
+    for (float v : pos)
+      append(v);
+    for (float v : vel)
+      append(v);
+    for (float v : acc)
+      append(v);
 
-    // 9.2 数据帧序号（4B, BE）
-    uint32_t seq = g_seq++;
-    for (int i = 3; i >= 0; --i)
-      frame.push_back(static_cast<uint8_t>((seq >> (8 * i)) & 0xFF));
+    // 实际值: 欧拉角 (rad), 角速度 (rad/s), 滑动平均角加速度 (rad/s²), 共9个数据
+    for (float v : ang)
+      append(v);
+    for (float v : ang_vel)
+      append(v);
+    for (float v : ang_acc)
+      append(v);
 
-    // 9.3 时间戳（8B, BE）
-    uint64_t t_ns = static_cast<uint64_t>(ros::Time::now().toNSec());
-    for (int i = 7; i >= 0; --i)
-      frame.push_back(static_cast<uint8_t>((t_ns >> (8 * i)) & 0xFF));
+    // 8. 发布可视化数据
+    // 8.1 更新并发布实际路径
+    geometry_msgs::PoseStamped current_pose_stamped;
+    current_pose_stamped.header.stamp = ros::Time::now();
+    current_pose_stamped.header.frame_id = odom;
+    current_pose_stamped.pose.position.x = pos[0];
+    current_pose_stamped.pose.position.y = pos[1];
+    current_pose_stamped.pose.position.z = pos[2];
+    current_pose_stamped.pose.orientation = tf_odom_base.transform.rotation;
 
-    // 9.4 payload (72 B, int16×36, BE)
-    for (int16_t val : all_data)
+    // 在同一个互斥锁作用域内处理 清除 和 更新
     {
-      frame.push_back((val >> 8) & 0xFF);
-      frame.push_back(val & 0xFF);
+      std::lock_guard<std::mutex> lock(path_mutex);
+
+      // --- 检查是否有重置请求 ---
+      if (g_reset_trigger)
+      {
+        actual_path_msg.poses.clear();
+        
+        // 关键：立即发布一次空路径，强制 RViz 清除画面
+        actual_path_msg.header.stamp = ros::Time::now();
+        actual_path_pub.publish(actual_path_msg); 
+        
+        g_reset_trigger = false; // 复位标志
+        ROS_WARN(">>> Actual path CLEARED and Published to RViz <<<");
+      }
+
+      // --- 正常添加当前点 ---
+      actual_path_msg.header = current_pose_stamped.header;
+      actual_path_msg.poses.push_back(current_pose_stamped);
+
+      // 限制路径长度防止内存溢出
+      if (actual_path_msg.poses.size() > 60000) {
+          actual_path_msg.poses.erase(actual_path_msg.poses.begin());
+      }
+    } // 锁在此处释放
+
+    static ros::Time last_path_pub_time = ros::Time::now();
+    // 降频发布路径 (例如 10Hz)，避免 RViz 卡顿
+    if ((ros::Time::now() - last_path_pub_time).toSec() > 0.1)
+    { 
+      std::lock_guard<std::mutex> lock(path_mutex);
+      actual_path_pub.publish(actual_path_msg);
+      last_path_pub_time = ros::Time::now();
     }
 
-    // ---------- 计算 CRC16 大端校验和 ----------
-    uint16_t crc = 0;
+    // 8.2 发布用于 rqt_plot 的数据
+    std_msgs::Float64 msg_f64;
+    // 位置
+    msg_f64.data = desired_state.pose.position.x;
+    plot_pos_x_des_pub.publish(msg_f64);
+    msg_f64.data = pos[0];
+    plot_pos_x_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.pose.position.y;
+    plot_pos_y_des_pub.publish(msg_f64);
+    msg_f64.data = pos[1];
+    plot_pos_y_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.pose.position.z;
+    plot_pos_z_des_pub.publish(msg_f64);
+    msg_f64.data = pos[2];
+    plot_pos_z_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.velocity.linear.x;
+    plot_vel_x_des_pub.publish(msg_f64);
+    msg_f64.data = vel[0];
+    plot_vel_x_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.velocity.linear.y;
+    plot_vel_y_des_pub.publish(msg_f64);
+    msg_f64.data = vel[1];
+    plot_vel_y_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.velocity.linear.z;
+    plot_vel_z_des_pub.publish(msg_f64);
+    msg_f64.data = vel[2];
+    plot_vel_z_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.acceleration.linear.x;
+    plot_acc_x_des_pub.publish(msg_f64);
+    msg_f64.data = acc[0];
+    plot_acc_x_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.acceleration.linear.y;
+    plot_acc_y_des_pub.publish(msg_f64);
+    msg_f64.data = acc[1];
+    plot_acc_y_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.acceleration.linear.z;
+    plot_acc_z_des_pub.publish(msg_f64);
+    msg_f64.data = acc[2];
+    plot_acc_z_act_pub.publish(msg_f64);
+
+    // 角度
+    msg_f64.data = r_des;
+    plot_ang_x_des_pub.publish(msg_f64);
+    msg_f64.data = ang[0];
+    plot_ang_x_act_pub.publish(msg_f64);
+
+    msg_f64.data = p_des;
+    plot_ang_y_des_pub.publish(msg_f64);
+    msg_f64.data = ang[1];
+    plot_ang_y_act_pub.publish(msg_f64);
+
+    msg_f64.data = y_des;
+    plot_ang_z_des_pub.publish(msg_f64);
+    msg_f64.data = ang[2];
+    plot_ang_z_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.velocity.angular.x;
+    plot_ang_vel_x_des_pub.publish(msg_f64);
+    msg_f64.data = ang_vel[0];
+    plot_ang_vel_x_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.velocity.angular.y;
+    plot_ang_vel_y_des_pub.publish(msg_f64);
+    msg_f64.data = ang_vel[1];
+    plot_ang_vel_y_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.velocity.angular.z;
+    plot_ang_vel_z_des_pub.publish(msg_f64);
+    msg_f64.data = ang_vel[2];
+    plot_ang_vel_z_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.acceleration.angular.x;
+    plot_ang_acc_x_des_pub.publish(msg_f64);
+    msg_f64.data = ang_acc[0];
+    plot_ang_acc_x_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.acceleration.angular.y;
+    plot_ang_acc_y_des_pub.publish(msg_f64);
+    msg_f64.data = ang_acc[1];
+    plot_ang_acc_y_act_pub.publish(msg_f64);
+
+    msg_f64.data = desired_state.acceleration.angular.z;
+    plot_ang_acc_z_des_pub.publish(msg_f64);
+    msg_f64.data = ang_acc[2];
+    plot_ang_acc_z_act_pub.publish(msg_f64);
+
+    // -------------------------------------------------------------
+    // 模式控制逻辑：决定是否通过串口发送
+    // -------------------------------------------------------------
+    bool should_send_serial = true;
+
+    if (g_run_mode == "debug")
+    {
+      // 调试模式下：只有当收到"新鲜"且"未消费"的控制指令时才发送
+      bool is_command_valid = false;
+      {
+        std::lock_guard<std::mutex> lock(desired_state_mutex);
+
+        // 判定标准：有数据 + 数据新鲜(<0.5s) + 尚未发送过
+        if (desired_state_received &&
+            !g_debug_msg_consumed &&
+            (ros::Time::now() - last_desired_state_time).toSec() < 0.5)
+        {
+          is_command_valid = true;
+          g_debug_msg_consumed = true; // [关键] 立即标记为已消费，防止下一帧继续发
+        }
+      }
+
+      if (!is_command_valid)
+      {
+        should_send_serial = false; // 拦截发送
+      }
+    }
+    // operating 模式下 should_send_serial 默认为 true，持续发送
+
+    if (should_send_serial)
+    {
+      // 9. 构建完整帧：帧头(0xAA,0xBB)、帧序号、时间戳、数据、校验、帧尾(0xCC,0xDD)
+      std::vector<uint8_t> frame;
+      frame.reserve(90); // 2+4+8+72+2+2
+
+      // 9.1 帧头 (2字节)
+      frame.push_back(0xAA);
+      frame.push_back(0xBB);
+
+      // 9.2 数据帧序号（4B, BE）
+      uint32_t seq = g_seq++;
+      for (int i = 3; i >= 0; --i)
+        frame.push_back(static_cast<uint8_t>((seq >> (8 * i)) & 0xFF));
+
+      // 9.3 时间戳（8B, BE）
+      uint64_t t_ns = static_cast<uint64_t>(ros::Time::now().toNSec());
+      for (int i = 7; i >= 0; --i)
+        frame.push_back(static_cast<uint8_t>((t_ns >> (8 * i)) & 0xFF));
+
+      // 9.4 payload (72 B, int16×36, BE)
+      for (int16_t val : all_data)
+      {
+        frame.push_back((val >> 8) & 0xFF);
+        frame.push_back(val & 0xFF);
+      }
+
+      // ---------- 计算 CRC16 大端校验和 ----------
+      uint16_t crc = 0;
 #if CRC_DEBUG_ENABLED
   ROS_INFO_STREAM("=== Upper CRC Debug ===");
   ROS_INFO_STREAM("Frame size before CRC: " << frame.size());
@@ -820,7 +922,8 @@ void timerCallback(const ros::TimerEvent &)
           ROS_INFO_STREAM_THROTTLE(5.0, "--- Frame " << seq << " ---" << "\nFrame sent: " << frame.size() << " bytes. | Final CRC: 0x" << std::hex << std::setfill('0') << std::setw(4) << crc << "\nDesired Position: [" << desired_state.pose.position.x << ", " << desired_state.pose.position.y << ", " << desired_state.pose.position.z << "]" << "\nActual  Position: [" << pos[0] << ", " << pos[1] << ", " << pos[2] << "]" << "\nDesired Velocity: [" << desired_state.velocity.linear.x << ", " << desired_state.velocity.linear.y << ", " << desired_state.velocity.linear.z << "]" << "\nActual  Velocity: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]");
     }
   }
-} // End of timerCallback
+  } // End of timerCallback
+}
 
 // ===========================================================
 // @brief 主函数：初始化 ROS 节点、串口、订阅器、TF2 监听、定时器
@@ -830,6 +933,11 @@ int main(int argc, char **argv)
 {
   // —— 初始化ROS节点 ——
   ros::init(argc, argv, "rs_t265_serial_bridge_node");
+
+  // 尝试提升为实时进程 (优先级 50)
+  // 这将消除 Linux 调度带来的绝大部分 5ms/15ms 抖动
+  setRealtimePriority(50);
+
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~"); // **MODIFIED**：私有命名空间，对应 <node> 下的 <param>，用于读取私有参数
 
@@ -943,8 +1051,15 @@ int main(int argc, char **argv)
   // —— 期望状态订阅器 ——
   ros::Subscriber desired_state_sub = nh.subscribe("/desired_state_topic", 1, desiredStateCallback);
 
-  // 定时器使用 g_frequency
-  ros::Timer timer = nh.createTimer(ros::Duration(1.0 / g_frequency), timerCallback);
+  // 订阅路径重置话题
+  ros::Subscriber path_reset_sub = nh.subscribe("/path_reset", 1, resetPathCallback);
+
+  // 启动独立的实时发送线程
+  // 必须在所有初始化完成后启动
+  std::thread tx_thread(serialTxLoop);
+
+  // 将线程与主进程分离，或者在 shutdown 时 join
+  tx_thread.detach();
 
   // —— 进入循环 ——
   ros::spin();
